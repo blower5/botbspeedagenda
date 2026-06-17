@@ -1,0 +1,96 @@
+:root {
+	--color1: #cacaca;
+	--color2: #f76700;
+	--color3: #4a3553;
+	--color4: #000000cc;
+	--color5: #3e2239;
+	--textshadow: #666666;
+}
+
+html, body {
+	background-color: var(--color5);
+	background-image: url(https://battleofthebits.com/disk/debris/botb_bg.png);
+	background-attachment: fixed;
+	color: var(--color1);
+	font-family: Verdana, Helvetica, sans-serif;
+	font-size: 12px;
+	height: 100%;
+	text-rendering: optimizeLegibility;
+	text-shadow: 0px 1px 1px var(--textshadow);
+}
+
+body {
+  background: var(--color4);
+  margin: auto;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 1px;
+  width: 100%;
+  max-width: 960px;
+  min-width: 450px;
+  height:auto;
+}
+.inner {
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+#status {
+	color: var(--color1);
+	font-family: monospace;
+	margin-top: 14px;
+	margin-left: 3px;
+	margin-bottom: 0px;
+}
+
+#LOGO {
+	position: relative;
+}
+.logo {
+	display: block;
+	font-size: 51px;
+	font-family: Arial Black, Arial, sans-serif;
+	font-weight: 900;
+	letter-spacing: -5px;
+	white-space: nowrap;
+	line-height: 30px;
+	height: 40px;
+}
+.logo0 {
+	position: absolute;
+	top: 0px;
+	color: var(--color4);
+	z-index: 10;
+	text-shadow: none;
+}
+.logo1 {
+	position: absolute;
+	top: 5px;
+	color: var(--color3);
+	z-index: 20;
+	text-shadow: none;
+}
+.logo2 {
+	position: absolute;
+	top: 10px;
+	color: var(--color1);
+	z-index: 30;
+}
+
+
+a {
+	text-decoration: none;
+	color: var(--color2);
+	overflow-wrap: anywhere;
+}
+
+
+
+#PALETTE_MENU {
+	position: relative;
+	float: right;
+}
+
+canvas {
+	padding-top: 15px;
+}
