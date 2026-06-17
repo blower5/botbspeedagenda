@@ -281,7 +281,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			//header day text
 			ctx.font = dayfontpx + "px Verdana";
 			let d = new Date(now.getTime() + i*24*3600000);
-			draw_outlined_text( parse_day(d.getDay()) + " " + d.getMonth().toString() + "/" + d.getDate().toString(), xunit*6*i+xunit + 10, dayfontpx + yunit/4, palettecolor1, palettecolorshadow);
+			draw_outlined_text( parse_day(d.getDay()) + " " + (d.getMonth()+1).toString() + "/" + d.getDate().toString(), xunit*6*i+xunit + 10, dayfontpx + yunit/4, palettecolor1, palettecolorshadow);
 			
 			//big box am
 			ctx.fillStyle = bgAMcolor;
