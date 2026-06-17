@@ -92,9 +92,11 @@ function setPaletteCookies(botbpalette) {
 
 window.addEventListener('DOMContentLoaded', (event) => {
 	let canvas = document.getElementById('main');
+	let canvastop = document.getElementById('top');
 	let width = canvas.clientWidth;   //probably 960px
 	let height = canvas.clientHeight; //probably 720px
 	let ctx = canvas.getContext('2d');
+	let ctxtop = canvastop.getContext('2d');
 
 
 
@@ -151,7 +153,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//-----
 
 	let xunit = width / 43;
-	let yunit = height / 13;
+	let yunit = (height-20)/ 13; //padding introduced because its cutting the bottom off???
 
 	let paddingpx = 4;
 	let linethickness = 1;
@@ -253,7 +255,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctx.fillStyle = palettecolor3;
 		ctx.fillRect(0, yunit, xunit-paddingpx, 6*yunit-paddingpx);
 		//ruler pm
-		ctx.fillRect(0, 7*yunit, xunit-paddingpx, 6*yunit-paddingpx);
+		ctx.fillRect(0, 7*yunit, xunit-paddingpx, 6*yunit);
 		
 		ctx.font = fontpx + "px sans-serif";
 		for (let j=	0; j < 24; j++) {	
@@ -284,7 +286,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			ctx.fillRect(xunit*6*i+xunit, yunit, xunit*6-paddingpx, 6*yunit-paddingpx);
 			//big box pm
 			ctx.fillStyle = bgPMcolor;
-			ctx.fillRect(xunit*6*i+xunit, 7*yunit, xunit*6-paddingpx, 6*yunit-paddingpx);
+			ctx.fillRect(xunit*6*i+xunit, 7*yunit, xunit*6-paddingpx, 6*yunit);
 			
 			ctx.fillStyle = bggridcolor;
 			for (let j=0; j < 24; j++) {
@@ -298,12 +300,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	function draw_current_time_marker() {
 		let now = new Date();
 		let current_decimal_hours = now.getHours() + now.getMinutes()/60;
-		ctx.fillStyle = "#fff";
-		ctx.fillRect(xunit, yunit+yunit/2*current_decimal_hours, xunit*6-paddingpx, linethickness);
+		ctxtop.fillStyle = palettecolor1;
+		ctxtop.fillRect(xunit, yunit+yunit/2*current_decimal_hours, xunit*6-paddingpx, linethickness);
 		
-		ctx.beginPath();
-		ctx.arc(xunit, yunit+yunit/2*current_decimal_hours, 5, 0, 6.28);
-		ctx.fill();
+		ctxtop.beginPath();
+		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours, 5, 0, 6.28);
+		ctxtop.fill();
 	}
 
 	
