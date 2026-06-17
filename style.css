@@ -121,6 +121,10 @@ input {
 	background-image: url(https://battleofthebits.com/styles/img/topNoiseShade.png);
 	background-repeat: repeat-x;
 }
+.battle:hover {
+	color: var(--color4);
+	background-color: var(--color1);
+}
 .oldbattle1{
 	border: 1px var(--color1) solid;
 	color: var(--color1);
