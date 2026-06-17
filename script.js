@@ -1,5 +1,5 @@
 function parse_day(d) {
-	return ["sun","mon","tue","wed","thu","fri","sat"][d];
+	return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
 }
 
 //days since the unix epoch in user timezone
@@ -153,7 +153,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	let xunit = width / 43;
 	let yunit = height / 13;
 
-	let paddingpx = 2;
+	let paddingpx = 4;
 	let linethickness = 1;
 
 	let dayfontpx = 18;
@@ -164,7 +164,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	let bgAMcolor = 		palettecolor4;
 	let bgPMcolor = 		palettecolor4;
-	let bgheadercolor = 	palettecolor3;
 	let bggridcolor =		palettecolor1+"66";
 
 	
@@ -180,12 +179,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctx.fillText(t,x,y);
 	}
 
-	//recreation of fillRect with divs.
+	//recreation of fillRect with divs. this way you can click on them, and some other stuff.
 	function drawdiv(x,y,w,h,txt = "",extraclass=""){
 		let maindiv = document.getElementById("maindiv");
 		let div = document.createElement("div");
 		div.className = "fixed "+extraclass;
-		div.style = "width:"+w+"px;height:"+h+"px;left:"+x+"px;top:"+y+"px;";
+		div.style = "width:"+(w-10)+"px;height:"+(h-10)+"px;left:"+x+"px;top:"+y+"px;";
 		div.textContent = txt.toString();
 		maindiv.appendChild(div);
 	}
@@ -196,7 +195,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let a = document.createElement("a");
 		let div = document.createElement("div");
 		div.className = "fixed "+extraclass;
-		div.style = "width:"+w+"px;height:"+h+"px;left:"+x+"px;top:"+y+"px;";
+		div.style = "width:"+(w-10)+"px;height:"+(h-10)+"px;left:"+x+"px;top:"+y+"px;";
 		div.textContent = txt.toString();
 		a.href = hrf;
 		a.appendChild(div);
@@ -243,7 +242,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	function clear() {
 		let now = new Date();
 		
+		//clear the canvas and the divs out
 		ctx.clearRect(0, 0, width, height);
+		document.getElementById("maindiv").innerHTML = "";
 		//top left box
 		ctx.fillStyle = palettecolor3;
 		ctx.fillRect(0, 0, xunit-paddingpx, yunit-paddingpx);
@@ -274,7 +275,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			ctx.fillRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx);
 			
 			//header day text
-			ctx.font = dayfontpx + "px sans-serif";
+			ctx.font = dayfontpx + "px Verdana";
 			let d = new Date(now.getTime() + i*24*3600000);
 			draw_outlined_text( parse_day(d.getDay()) + " " + d.getMonth().toString() + "/" + d.getDate().toString(), xunit*6*i+xunit + 10, dayfontpx + yunit/4, palettecolor1, palettecolorshadow);
 			

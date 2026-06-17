@@ -108,21 +108,28 @@ a {
 }
 .battle{
 	font-size: 11px;
+	padding: 4px;
 	border-radius: 4px;
+	background-image: url(https://battleofthebits.com/styles/img/topNoiseShade.png);
+	background-repeat: repeat-x;
 }
 .oldbattle1{
+	border: 1px var(--color1) solid;
 	color: var(--color1);
 	background-color: var(--color5);
 }
 .oldbattle2{
+	border: 1px var(--color1) solid;
 	color: var(--color1);
 	background-color: var(--color45);
 }
 .newbattle1{
+	border: 1px var(--color2) solid;
 	color: var(--color2);
 	background-color: var(--color3);
 }
 .newbattle2{
+	border: 1px var(--color2) solid;
 	color: var(--color2);
 	background-color: var(--color34);
 }
