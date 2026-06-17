@@ -244,9 +244,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	function clear() {
 		let now = new Date();
 		
-		//clear the canvas and the divs out
+		//clear the canvases and the divs out
 		ctx.clearRect(0, 0, width, height);
+		ctxtop.clearRect(0, 0, width, height);
 		document.getElementById("maindiv").innerHTML = "";
+		
 		//top left box
 		ctx.fillStyle = palettecolor3;
 		ctx.fillRect(0, 0, xunit-paddingpx, yunit-paddingpx);
