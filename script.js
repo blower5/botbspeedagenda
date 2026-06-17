@@ -44,6 +44,22 @@ function getTextShadow(hex) {
 	return a;
 }
 
+//rrggbb rrggbb
+function average_two_colors(c1,c2) {
+	let [r, g, b] = [0, 0, 0];
+	let a = "";
+	
+	r = parseInt(c1.slice(0,2),16) + parseInt(c2.slice(0,2),16);
+	g = parseInt(c1.slice(2,4),16) + parseInt(c2.slice(2,4),16);
+	b = parseInt(c1.slice(4,6),16) + parseInt(c2.slice(4,6),16);
+	
+	[r, g, b].forEach(color => 
+		a += Math.floor(color*.5).toString(16).padStart(2,"0")
+	);
+	
+	return a;
+}
+
 //update palette cookies
 function updatePalette(id) {
 	if (id == id.match(/[0-9]+/)[0]) { //pass numbers only
@@ -80,6 +96,45 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	let height = canvas.clientHeight; //probably 720px
 	let ctx = canvas.getContext('2d');
 
+
+
+
+	// ----------------------------------------------------------------------------------------------------------
+	//    palette control
+	//
+	var storedPalette = getCookie("palette");
+	//synthesizing more colors here, for more complex visuals
+	//quite annoyingly this needs to be both js and css variables
+	let [palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45] = ["#cacaca","#f76700","#4a3553","#000000cc","#3e2239","#666666","#251a29","#1f111c"];
+	if (storedPalette) {
+		let c34 = average_two_colors(storedPalette.slice(12,18),storedPalette.slice(18,24));
+		let c45 = average_two_colors(storedPalette.slice(18,24),storedPalette.slice(24,30));
+		let ts  = getTextShadow(storedPalette);
+		document.documentElement.style.cssText = "--color1: #"+storedPalette.slice(0,6)+
+		"; --color2: #"+storedPalette.slice(6,12)+
+		"; --color3: #"+storedPalette.slice(12,18)+
+		"; --color4: #"+storedPalette.slice(18,24)+
+		"cc; --color5: #"+storedPalette.slice(24,30)+
+		"; --textshadow: #"+ts+
+		"; --color34: #"+c34+
+		"; --color45: #"+c45+
+		";";
+		[palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45] = [storedPalette.slice(0,6),storedPalette.slice(6,12),storedPalette.slice(12,18),storedPalette.slice(18,24),storedPalette.slice(24,30),ts,c34,c45].map(c => "#"+c.toString());
+	}
+	
+	//run on enter key in palette text input
+	var paletteinput = document.getElementById('pinput');
+	paletteinput.addEventListener('change', (event) => {
+		updatePalette(paletteinput.value);
+	});
+	// ----------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
 	//columns are drawn in this ratio
 	//| 1 |   6   |   6   |   6   |   6   |   6   |   6   |   6   | 
 	//1 + 6*7 = 43
@@ -102,23 +157,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	let linethickness = 1;
 
 	let dayfontpx = 18;
-	let dayfontcolor = "white";
+	let dayfontcolor = palettecolor1;
 	
 	let fontpx = 11;
-	let fontcolor = "white";
+	let fontcolor = palettecolor1;
 
-	let bgAMcolor = 		'#4a4540';
-	let bgPMcolor = 		'#40454a';
-	let bgheadercolor = 	'#404040';
-	let bggridcolor =		'#fff4';
-
-	let battlecolor1 = 		'#975a';
-	let battlecolor2 =  	'#579a';
-	let pastbattlecolor1  = '#000a';
-	let pastbattlecolor2  = '#222a';
+	let bgAMcolor = 		palettecolor4;
+	let bgPMcolor = 		palettecolor4;
+	let bgheadercolor = 	palettecolor3;
+	let bggridcolor =		palettecolor1+"66";
 
 	
-	
+	console.log(palettecolor4);
 	
 	function draw_outlined_text(t,x,y,color="white",coloroutline="black") {
 		ctx.fillStyle = coloroutline;
@@ -130,14 +180,38 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctx.fillText(t,x,y);
 	}
 
+	//recreation of fillRect with divs.
+	function drawdiv(x,y,w,h,txt = "",extraclass=""){
+		let maindiv = document.getElementById("maindiv");
+		let div = document.createElement("div");
+		div.className = "fixed "+extraclass;
+		div.style = "width:"+w+"px;height:"+h+"px;left:"+x+"px;top:"+y+"px;";
+		div.textContent = txt.toString();
+		maindiv.appendChild(div);
+	}
+	
+	//recreation of fillRect with divs. this one is a hyperlink.
+	function drawdivlink(x,y,w,h,txt = "",hrf="",extraclass=""){
+		let maindiv = document.getElementById("maindiv");
+		let a = document.createElement("a");
+		let div = document.createElement("div");
+		div.className = "fixed "+extraclass;
+		div.style = "width:"+w+"px;height:"+h+"px;left:"+x+"px;top:"+y+"px;";
+		div.textContent = txt.toString();
+		a.href = hrf;
+		a.appendChild(div);
+		maindiv.appendChild(a);
+	}
+
 	//draws boxes for every battle in a list, takes 2 colors to alternate between
-	function draw_battle_list(battles_list, color1, color2) {
+	function draw_battle_list(battles_list, old=false) {
 		for (let i in battles_list) {
 		
 			//filter non-xhb out
 			if (battles_list[i].type != 3) return;
 
-			ctx.fillStyle = i%2?color1:color2;
+			let cl = i%2?"battle newbattle1":"battle newbattle2";
+			if (old) cl = i%2?"battle oldbattle1":"battle oldbattle2";
 			
 			st = new Date(battles_list[i]["period_data"][0]["start"]*1000);
 			et = new Date(battles_list[i]["period_data"][0]["end"]*1000);
@@ -149,20 +223,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let start_decimal_hours_absolute = st.getHours() + st.getMinutes()/60;
 			let end_decimal_hours_absolute = et.getHours() + et.getMinutes()/60;
 			
+			//filter out battles more than a week away
+			if (start_days_remaining > 6) return;
+			
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
 
-				ctx.fillRect(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(24 - start_decimal_hours_absolute));
+				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(24 - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].profileURL, cl);
 				
-				ctx.fillRect(xunit*6*end_days_remaining+xunit, yunit, xunit*6-paddingpx, yunit/2*end_decimal_hours_absolute);
+				drawdivlink(xunit*6*end_days_remaining+xunit, yunit, xunit*6-paddingpx, yunit/2*end_decimal_hours_absolute, "", cl);
 				
-				ctx.font = fontpx + "px sans-serif";
-				draw_outlined_text(battles_list[i].title, xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute + fontpx, fontcolor);
 			} else {
-				ctx.fillRect(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute));
-				
-				ctx.font = fontpx + "px sans-serif";
-				draw_outlined_text(battles_list[i].title, xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute + fontpx, fontcolor);
+				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].profileURL, cl);
 			}
 		}
 	}
@@ -173,13 +245,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		ctx.clearRect(0, 0, width, height);
 		//top left box
-		ctx.fillStyle = bgheadercolor;
+		ctx.fillStyle = palettecolor3;
 		ctx.fillRect(0, 0, xunit-paddingpx, yunit-paddingpx);
 		
 		//ruler am
-		ctx.fillStyle = bgAMcolor;
+		ctx.fillStyle = palettecolor3;
 		ctx.fillRect(0, yunit, xunit-paddingpx, 6*yunit-paddingpx);
-		ctx.fillStyle = bgPMcolor;
+		//ruler pm
 		ctx.fillRect(0, 7*yunit, xunit-paddingpx, 6*yunit-paddingpx);
 		
 		ctx.font = fontpx + "px sans-serif";
@@ -189,7 +261,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			ctx.fillRect(0, yunit/2*j + yunit + 1, xunit-paddingpx, linethickness);
 			
 			//hour numbers
-			draw_outlined_text(j.toString().length-1?j:"0"+j, 3, yunit/2*j + yunit + 1 + fontpx);
+			draw_outlined_text(j.toString().length-1?j:"0"+j, 3, yunit/2*j + yunit + 1 + fontpx, palettecolor1, palettecolorshadow);
 			
 		}
 		
@@ -198,13 +270,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		for (let i = 0; i < 7; i++) {
 			
 			//header box
-			ctx.fillStyle = bgheadercolor;
+			ctx.fillStyle = palettecolor3;
 			ctx.fillRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx);
 			
 			//header day text
 			ctx.font = dayfontpx + "px sans-serif";
-			d = new Date(now.getTime() + i*24*3600000);
-			draw_outlined_text( parse_day(d.getDay()) + " " + d.getMonth().toString() + "/" + d.getDate().toString(), xunit*6*i+xunit + 10, dayfontpx + yunit/4, dayfontcolor);
+			let d = new Date(now.getTime() + i*24*3600000);
+			draw_outlined_text( parse_day(d.getDay()) + " " + d.getMonth().toString() + "/" + d.getDate().toString(), xunit*6*i+xunit + 10, dayfontpx + yunit/4, palettecolor1, palettecolorshadow);
 			
 			//big box am
 			ctx.fillStyle = bgAMcolor;
@@ -239,25 +311,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	
 	
 	
-	// ----------------------------------------------------------------------------------------------------------
-	//    palette control
-	//
-	var storedPalette = getCookie("palette");
-	if (storedPalette) {
-		document.documentElement.style.cssText = "--color1: #"+storedPalette.slice(0,6)+
-		"; --color2: #"+storedPalette.slice(6,12)+
-		"; --color3: #"+storedPalette.slice(12,18)+
-		"; --color4: #"+storedPalette.slice(18,24)+
-		"cc; --color5: #"+storedPalette.slice(24,30)+
-		"; --textshadow: #"+getTextShadow(storedPalette)+";";
-	}
 	
-	//run on enter key in palette text input
-	var paletteinput = document.getElementById('pinput');
-	paletteinput.addEventListener('change', (event) => {
-		updatePalette(paletteinput.value);
-	});
-	// ----------------------------------------------------------------------------------------------------------
 
 	
 	
@@ -265,8 +319,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//the full draw cycle, which runs every minute
 	function draw() {
 
-		//two seperate requests: current, which shows all unclosed battles and battles to come
-		//through the next week, and a second one which grabs the battles that already happened today.
+		//two seperate requests: /current, which shows all unclosed battles and future battles
+		//and a second one which grabs the battles that already happened today. this second one
+		//uses a post request to filter for battles that happened today, and then filters out
+		//battles that haven't reached the "end" period by passing the result to a function.
+		//Additionally, they need to account for a race condition so clear() only gets called
+		//once. Although the time marker needs to be drawn on top, it will only ever need to be
+		//above an active battle, so this is handled in the /current request's callback.
 
 		let first_response = true;
 
@@ -276,7 +335,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				clear();
 				first_response = false;
 			}
-			draw_battle_list(req.response,battlecolor1,battlecolor2);
+			draw_battle_list(req.response);
 			draw_current_time_marker();
 		});
 		req.open("GET", "https://battleofthebits.com/api/v1/battle/current");
@@ -290,7 +349,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				first_response = false;
 			}
 			let arr = only_ended_battles(reqold.response);
-			draw_battle_list(arr,pastbattlecolor1,pastbattlecolor2);
+			draw_battle_list(arr,true);
 		});
 		reqold.open("POST", "https://battleofthebits.com/api/v1/battle/list");
 		reqold.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

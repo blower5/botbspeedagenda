@@ -1,3 +1,4 @@
+/* color variables defaults, will be overrided by palette menu */
 :root {
 	--color1: #cacaca;
 	--color2: #f76700;
@@ -5,6 +6,8 @@
 	--color4: #000000cc;
 	--color5: #3e2239;
 	--textshadow: #666666;
+	--color34:#251a29;
+	--color45:#1f111c;
 }
 
 html, body {
@@ -89,6 +92,39 @@ a {
 #PALETTE_MENU {
 	position: relative;
 	float: right;
+}
+
+
+#maindiv {
+	position:absolute;
+	width: 940px;
+	height: 740px;
+	top: 70px;
+}
+
+/* these are the fixed divs that represent battles. */
+.fixed {
+	position:absolute;
+}
+.battle{
+	font-size: 11px;
+	border-radius: 4px;
+}
+.oldbattle1{
+	color: var(--color1);
+	background-color: var(--color5);
+}
+.oldbattle2{
+	color: var(--color1);
+	background-color: var(--color45);
+}
+.newbattle1{
+	color: var(--color2);
+	background-color: var(--color3);
+}
+.newbattle2{
+	color: var(--color2);
+	background-color: var(--color34);
 }
 
 canvas {
