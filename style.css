@@ -108,6 +108,21 @@ input {
 	top: 70px;
 }
 
+/* small is only used in the battle divs for the timestamp */
+.battle small {
+	font-size: 9px;
+	position: absolute;
+	/* 100 percent width minus the 4px padding on each side */
+	width: calc(100% - 8px); 
+	text-align: end;
+}
+
+/* keep the battle name away from the timestamp */
+.battle span {
+	display: block;
+	max-width: calc(100% - 35px)
+}
+
 /* these are the fixed divs that represent battles. */
 .fixed {
 	position:absolute;
@@ -124,6 +139,7 @@ input {
 .battle:hover {
 	color: var(--color4);
 	background-color: var(--color1);
+	border: 1px var(--color4);
 }
 .oldbattle1{
 	border: 1px var(--color1) solid;

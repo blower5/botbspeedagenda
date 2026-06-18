@@ -158,25 +158,31 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	let paddingpx = 4;
 	let linethickness = 1;
 
-	let dayfontpx = 18;
+	let dayfontpx = 17;
 	let dayfontcolor = palettecolor1;
 	
 	let fontpx = 11;
 	let fontcolor = palettecolor1;
+	
+	let fontoutlinecolor = palettecolorshadow + "66";
 
 	let bgAMcolor = 		palettecolor4;
 	let bgPMcolor = 		palettecolor4;
 	let bggridcolor =		palettecolor1+"66";
 
+	let borderradius = 4;
 	
-	console.log(palettecolor4);
+	let topshadegradient = ctx.createLinearGradient(0,0,0,35);
+	topshadegradient.addColorStop(0, "#8A8A8A2B");
+	topshadegradient.addColorStop(1, "#8A8A8A00");
+	
 	
 	function draw_outlined_text(t,x,y,color="white",coloroutline="black") {
 		ctx.fillStyle = coloroutline;
-		ctx.fillText(t,x-1,y-1);
-		ctx.fillText(t,x+1,y-1);
 		ctx.fillText(t,x-1,y+1);
 		ctx.fillText(t,x+1,y+1);
+		ctx.fillText(t,x,y+1);
+		ctx.fillText(t,x,y+2);
 		ctx.fillStyle = color;
 		ctx.fillText(t,x,y);
 	}
@@ -192,13 +198,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	}
 	
 	//recreation of fillRect with divs. this one is a hyperlink.
-	function drawdivlink(x,y,w,h,txt = "",hrf="",extraclass=""){
+	function drawdivlink(x,y,w,h,txt,txt2 = "",hrf="",extraclass=""){
 		let maindiv = document.getElementById("maindiv");
 		let a = document.createElement("a");
 		let div = document.createElement("div");
+		let small = document.createElement("small");
+		let span = document.createElement("span");
+		
 		div.className = "fixed "+extraclass;
 		div.style = "width:"+(w-10)+"px;height:"+(h-10)+"px;left:"+x+"px;top:"+y+"px;";
-		div.textContent = txt.toString();
+		
+		span.textContent = txt.toString();
+		small.textContent = txt2.toString();
+		
+		div.appendChild(small);
+		div.appendChild(span);
+		
 		a.href = hrf;
 		a.appendChild(div);
 		maindiv.appendChild(a);
@@ -230,12 +245,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
 
-				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(24 - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].profileURL, cl);
+				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(24 - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].start.slice(11,16), battles_list[i].profileURL, cl);
 				
-				drawdivlink(xunit*6*end_days_remaining+xunit, yunit, xunit*6-paddingpx, yunit/2*end_decimal_hours_absolute, "", cl);
+				drawdivlink(xunit*6*end_days_remaining+xunit, yunit, xunit*6-paddingpx, yunit/2*end_decimal_hours_absolute, "", "", cl);
 				
 			} else {
-				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].profileURL, cl);
+				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].start.slice(11,16), battles_list[i].profileURL, cl);
 			}
 		}
 	}
@@ -251,22 +266,35 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		//top left box
 		ctx.fillStyle = palettecolor3;
-		ctx.fillRect(0, 0, xunit-paddingpx, yunit-paddingpx);
+		ctx.beginPath();
+		ctx.roundRect(0, 0, xunit-paddingpx, yunit-paddingpx, borderradius);
+		ctx.fill()
+		ctx.fillStyle = topshadegradient;
+		ctx.beginPath();
+		ctx.roundRect(0, 0, xunit-paddingpx, yunit-paddingpx, borderradius);
+		ctx.fill();
 		
 		//ruler am
 		ctx.fillStyle = palettecolor3;
-		ctx.fillRect(0, yunit, xunit-paddingpx, 6*yunit-paddingpx);
+		ctx.beginPath();
+		ctx.roundRect(0, yunit, xunit-paddingpx, 6*yunit-paddingpx, borderradius);
+		ctx.fill()
 		//ruler pm
-		ctx.fillRect(0, 7*yunit, xunit-paddingpx, 6*yunit);
+		ctx.beginPath();
+		ctx.roundRect(0, 7*yunit, xunit-paddingpx, 6*yunit, borderradius);
+		ctx.fill()
+		
 		
 		ctx.font = fontpx + "px sans-serif";
 		for (let j=	0; j < 24; j++) {	
 			//ruler 24 hour grid
-			ctx.fillStyle = bggridcolor;
-			ctx.fillRect(0, yunit/2*j + yunit + 1, xunit-paddingpx, linethickness);
-			
+			if (j%12!=0) {
+				ctx.fillStyle = bggridcolor;
+				ctx.fillRect(0, yunit/2*j + yunit + 1, xunit-paddingpx, linethickness);
+			}
 			//hour numbers
-			draw_outlined_text(j.toString().length-1?j:"0"+j, 3, yunit/2*j + yunit + 1 + fontpx, palettecolor1, palettecolorshadow);
+			ctx.textAlign = "left";
+			draw_outlined_text(j.toString().length-1?j:"0"+j, 3, yunit/2*j + yunit + 1 + fontpx, palettecolor1, fontoutlinecolor);
 			
 		}
 		
@@ -276,12 +304,20 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			
 			//header box
 			ctx.fillStyle = palettecolor3;
-			ctx.fillRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx);
+			ctx.beginPath();
+			ctx.roundRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx, borderradius);
+			ctx.fill();
+			
+			ctx.fillStyle = topshadegradient;
+			ctx.beginPath();
+			ctx.roundRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx, borderradius);
+			ctx.fill();
 			
 			//header day text
-			ctx.font = dayfontpx + "px Verdana";
+			ctx.textAlign = "center";
+			ctx.font = "bold " + dayfontpx + "px Verdana";
 			let d = new Date(now.getTime() + i*24*3600000);
-			draw_outlined_text( parse_day(d.getDay()) + " " + (d.getMonth()+1).toString() + "/" + d.getDate().toString(), xunit*6*i+xunit + 10, dayfontpx + yunit/4, palettecolor1, palettecolorshadow);
+			draw_outlined_text( parse_day(d.getDay()) + " " + (d.getMonth()+1).toString() + "/" + d.getDate().toString(), xunit*6*i+xunit*4 - 3, dayfontpx + yunit/4, palettecolor1, fontoutlinecolor);
 			
 			//big box am
 			ctx.fillStyle = bgAMcolor;
@@ -307,6 +343,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		ctxtop.beginPath();
 		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours, 5, 0, 6.28);
+		ctxtop.fill();		
+		
+		ctxtop.fillStyle = palettecolor2;
+		ctxtop.beginPath();
+		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours, 3, 0, 6.28);
 		ctxtop.fill();
 	}
 
