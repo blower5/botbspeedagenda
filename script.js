@@ -89,6 +89,17 @@ function setPaletteCookies(botbpalette) {
 	location.reload()
 }
 
+function skull(){
+	s = document.createElement("style")
+	s.textContent = `
+		* {
+			background-image: url(./badassskeleton.png) !important;
+			background-attachment: fixed !important;
+		}
+		`
+	document.body.appendChild(s);
+}
+
 
 window.addEventListener('DOMContentLoaded', (event) => {
 	let canvas = document.getElementById('main');
