@@ -318,7 +318,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			ctx.textAlign = "center";
 			ctx.font = "bold " + dayfontpx + "px Verdana";
 			let d = new Date(now.getTime() + i*24*3600000);
-			draw_outlined_text( parse_day(d.getDay()) + " " + (d.getMonth()+1).toString() + "/" + d.getDate().toString(), xunit*6*i+xunit*4 - 3, dayfontpx + yunit/4, palettecolor1, fontoutlinecolor);
+			draw_outlined_text( 
+				parse_day(d.getDay()) + " " + (d.getMonth()+1).toString() + "/" + d.getDate().toString(),
+				xunit*6*i + xunit*4 - 3, 
+				yunit/2 + 3, 
+				palettecolor1, 
+				fontoutlinecolor);
 			
 			//big box am
 			ctx.fillStyle = bgAMcolor;
