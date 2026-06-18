@@ -257,12 +257,39 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
 
-				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(24 - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].start.slice(11,16), battles_list[i].profileURL, cl);
+				console.log(battles_list[i].title + " crosses day boundry");
+
+				drawdivlink(
+					xunit*6*start_days_remaining+xunit,
+					yunit+yunit/2*start_decimal_hours_absolute,
+					xunit*6-paddingpx, 
+					yunit/2*(24 - start_decimal_hours_absolute),
+					battles_list[i].title,
+					st.getHours().toString() +":"+ st.getMinutes().toString(),
+					battles_list[i].profileURL,
+					cl);
 				
-				drawdivlink(xunit*6*end_days_remaining+xunit, yunit, xunit*6-paddingpx, yunit/2*end_decimal_hours_absolute, "", "", cl);
+				if (end_days_remaining > 6) return;
+				
+				drawdivlink(
+					xunit*6*end_days_remaining+xunit,
+					yunit,
+					xunit*6-paddingpx,
+					yunit/2*end_decimal_hours_absolute,
+					"...",
+					"",
+					battles_list[i].profileURL,
+					cl);
 				
 			} else {
-				drawdivlink(xunit*6*start_days_remaining+xunit, yunit+yunit/2*start_decimal_hours_absolute, xunit*6-paddingpx, yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute), battles_list[i].title, battles_list[i].start.slice(11,16), battles_list[i].profileURL, cl);
+				drawdivlink(
+					xunit*6*start_days_remaining+xunit,
+					yunit+yunit/2*start_decimal_hours_absolute,
+					xunit*6-paddingpx,
+					yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute),
+					battles_list[i].title,
+					st.getHours().toString() +":"+ st.getMinutes().toString(),
+					battles_list[i].profileURL, cl);
 			}
 		}
 	}
