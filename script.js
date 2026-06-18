@@ -339,6 +339,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	function draw_current_time_marker() {
 		let now = new Date();
 		let current_decimal_hours = now.getHours() + now.getMinutes()/60;
+		
+		//dropshadow
+		ctxtop.fillStyle = fontoutlinecolor;
+		ctxtop.fillRect(xunit, yunit+yunit/2*current_decimal_hours, xunit*6-paddingpx, linethickness+1);
+		
+		ctxtop.beginPath();
+		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours+1, 5, 0, 6.28);
+		ctxtop.fill();		
+
+		
+		
 		ctxtop.fillStyle = palettecolor1;
 		ctxtop.fillRect(xunit, yunit+yunit/2*current_decimal_hours, xunit*6-paddingpx, linethickness);
 		
