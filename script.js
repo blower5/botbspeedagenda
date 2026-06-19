@@ -24,6 +24,9 @@ function assemble_datestring() {
 	return now.getFullYear().toString()+"-"+(m.length-1?m:"0"+m)+"-"+(d.length-1?d:"0"+d);
 }
 
+function textdisplay(t) {
+	document.getElementById("textdisplay").textContent = t;
+}
 
 //The text shadow color is the average of all 5 palette colors. Really!
 //Takes the full concatenated palette hex and averages it.
@@ -254,10 +257,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			//filter out battles more than a week away
 			if (start_days_remaining > 6) return;
 			
+			let mt = st.getMinutes().toString();
+			mt = (mt.length-1)?mt:"0"+mt;
+			let timestring = st.getHours().toString() +":"+ mt;
+			
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
-
-				console.log(battles_list[i].title + " crosses day boundry");
 
 				drawdivlink(
 					xunit*6*start_days_remaining+xunit,
@@ -265,7 +270,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					xunit*6-paddingpx, 
 					yunit/2*(24 - start_decimal_hours_absolute),
 					battles_list[i].title,
-					st.getHours().toString() +":"+ st.getMinutes().toString(),
+					timestring,
 					battles_list[i].profileURL,
 					cl);
 				
@@ -288,7 +293,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					xunit*6-paddingpx,
 					yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute),
 					battles_list[i].title,
-					st.getHours().toString() +":"+ st.getMinutes().toString(),
+					timestring,
 					battles_list[i].profileURL, cl);
 			}
 		}
@@ -420,6 +425,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//the full draw cycle, which runs every minute
 	function draw() {
 
+		textdisplay("Refreshing...");
+		
 		//two seperate requests: /current, which shows all unclosed battles and future battles
 		//and a second one which grabs the battles that already happened today. this second one
 		//uses a post request to filter for battles that happened today, and then filters out
@@ -438,6 +445,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			}
 			draw_battle_list(req.response);
 			draw_current_time_marker();
+			textdisplay("Loaded future battles.");
 		});
 		req.open("GET", "https://battleofthebits.com/api/v1/battle/current");
 		req.responseType = 'json';
@@ -451,6 +459,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			}
 			let arr = only_ended_battles(reqold.response);
 			draw_battle_list(arr,true);
+			textdisplay("Loaded past battles.");
 		});
 		reqold.open("POST", "https://battleofthebits.com/api/v1/battle/list");
 		reqold.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -464,8 +473,36 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	draw_current_time_marker();
 	
 	draw();
+	
 	setInterval(draw,120000);
 	
+	//now set up mouse handling functions for the text display.
+	document.getElementById("maindiv").addEventListener('mousemove', (event) => {
+		let now = new Date();
+		
+		let m = document.getElementById("maindiv").getBoundingClientRect();
+		let mx = event.x - m.x;
+		let my = event.y - m.y;
+		//in decimal hours from 12AM the first listed day
+		let mtime = Math.max(my - yunit,0)/(yunit/2) + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
+		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
+		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
+		let minutes = Math.floor((mtime%1)*60).toString();
+		minutes = (minutes.length-1)?minutes:"0"+minutes;
+		let mtimetext = mtimedaytext + ", " + Math.floor(mtime%24) + ":" + minutes;
+		
+		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
+		let mtimerelative = mtime - nowdecimalhours;
+		
+		minutes = Math.floor((mtimerelative%1)*60).toString();
+		minutes = (minutes.length-1)?minutes:"0"+minutes;
+		let mtimerelativetext = Math.floor(mtime/24) + "d " + Math.floor(mtimerelative%24) + "h " + minutes + "m";
+		
+		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
+	});
 	
 	
 });
+
+
+

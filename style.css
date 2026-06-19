@@ -104,23 +104,15 @@ input {
 #maindiv {
 	position:absolute;
 	width: 940px;
-	height: 720px;
+	height: 826px;
 	top: 70px;
 }
 
 /* small is only used in the battle divs for the timestamp */
 .battle small {
 	font-size: 9px;
-	position: absolute;
-	/* 100 percent width minus the 4px padding on each side */
-	width: calc(100% - 8px); 
-	text-align: end;
-}
-
-/* keep the battle name away from the timestamp */
-.battle span {
-	display: block;
-	max-width: calc(100% - 35px)
+	float: right;
+	margin-left: 2px;
 }
 
 /* these are the fixed divs that represent battles. */
@@ -129,7 +121,7 @@ input {
 }
 .battle{
 	font-size: 11px;
-	text-overflow: ellipsis;
+	hyphens: auto;
 	overflow: hidden;
 	padding: 2px 4px;
 	line-height: 11px;
@@ -166,9 +158,19 @@ input {
 canvas {
 	padding-top: 15px;
 }
+/* second canvas for drawing on top of the divs, needs clickthrough */
 #top {
 	z-index: 10;
 	position:absolute;
 	top:55px;
 	pointer-events: none;
+}
+
+#textdisplay {
+	margin-right: 4px;
+	padding: 4px 6px;
+	border-radius: 4px;
+	background: var(--color4) url(https://battleofthebits.com/styles/img/topNoiseShade.png);
+	background-repeat: repeat-x;
+	color: var(--color1);
 }
