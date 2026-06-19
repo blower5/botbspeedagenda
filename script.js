@@ -425,7 +425,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//the full draw cycle, which runs every minute
 	function draw() {
 
-		textdisplay("Refreshing...");
+		textdisplay("0/2 Refreshing... ");
 		
 		//two seperate requests: /current, which shows all unclosed battles and future battles
 		//and a second one which grabs the battles that already happened today. this second one
@@ -439,13 +439,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 		let req = new XMLHttpRequest();
 		req.addEventListener('load', (event) => {
+			textdisplay("2/2 Loaded!");
 			if (first_response) {
+				textdisplay("1/2 Loaded future battles...");
 				clear();
 				first_response = false;
 			}
 			draw_battle_list(req.response);
 			draw_current_time_marker();
-			textdisplay("Loaded future battles.");
 		});
 		req.open("GET", "https://battleofthebits.com/api/v1/battle/current");
 		req.responseType = 'json';
@@ -453,13 +454,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 		reqold = new XMLHttpRequest();
 		reqold.addEventListener('load', (event) => {
+			textdisplay("2/2  Loaded!");
 			if (first_response) {
+				textdisplay("1/2 Loaded past battles...");
 				clear();
 				first_response = false;
 			}
 			let arr = only_ended_battles(reqold.response);
 			draw_battle_list(arr,true);
-			textdisplay("Loaded past battles.");
 		});
 		reqold.open("POST", "https://battleofthebits.com/api/v1/battle/list");
 		reqold.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
