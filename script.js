@@ -191,14 +191,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	topshadegradient.addColorStop(1, "#8A8A8A00");
 	
 	
-	function draw_outlined_text(t,x,y,color="white",coloroutline="black") {
-		ctx.fillStyle = coloroutline;
-		ctx.fillText(t,x-1,y+1);
-		ctx.fillText(t,x+1,y+1);
-		ctx.fillText(t,x,y+1);
-		ctx.fillText(t,x,y+2);
-		ctx.fillStyle = color;
-		ctx.fillText(t,x,y);
+	function draw_outlined_text(t,x,y,color="white",coloroutline="black",cx=ctx) {
+		cx.fillStyle = coloroutline;
+		cx.fillText(t,x-1,y+1);
+		cx.fillText(t,x+1,y+1);
+		cx.fillText(t,x,y+1);
+		cx.fillText(t,x,y+2);
+		cx.fillStyle = color;
+		cx.fillText(t,x,y);
 	}
 
 	//recreation of fillRect with divs. this way you can click on them, and some other stuff.
@@ -411,7 +411,39 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctxtop.fill();
 	}
 
-	
+	let CROSSHAIRFRAME = 0;
+	function draw_mouse_crosshairs(x,y) {
+		
+		if (x<xunit) return;
+		if (y<yunit) return;
+		
+		//snap x left to day boundary
+		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
+		
+		ctxtop.fillStyle = palettecolor2;
+		ctxtop.strokeStyle = palettecolor2;
+
+		ctxtop.fillRect( snappedx,y,xunit*6-paddingpx,linethickness );
+		
+		//ctxtop.fillRect( x,y-10,linethickness,20 );
+		
+		//endless fun was had
+		
+		ctxtop.beginPath();
+		ctxtop.arc(x,y, 6, CROSSHAIRFRAME*.03, CROSSHAIRFRAME*.03+5);
+		
+		let xsize = 8;
+		let s = Math.sin(CROSSHAIRFRAME*.03)*xsize;
+		let c = Math.cos(CROSSHAIRFRAME*.03)*xsize;
+		ctxtop.moveTo(x+s,y+c);
+		ctxtop.lineTo(x-s,y-c);
+		ctxtop.moveTo(x-s,y+c);
+		ctxtop.lineTo(x+s,y-c);
+		ctxtop.stroke();
+		
+		CROSSHAIRFRAME++;
+		CROSSHAIRFRAME%=419;
+	}
 	
 	
 	
@@ -485,6 +517,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let m = document.getElementById("maindiv").getBoundingClientRect();
 		let mx = event.x - m.x;
 		let my = event.y - m.y;
+		
 		//in decimal hours from 12AM the first listed day
 		let mtime = Math.max(my - yunit,0)/(yunit/2) + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
 		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
@@ -496,12 +529,16 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
 		let mtimerelative = mtime - nowdecimalhours;
 		
-		minutes =  Math.floor((mtimerelative%1)*60);
+		let rminutes =  Math.floor((mtimerelative%1)*60);
 		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
 		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
-		let mtimerelativetext = days + "d " + hours + "h " + minutes + "m";
+		let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";
 		
 		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
+		
+		ctxtop.clearRect(0, 0, width, height);
+		draw_current_time_marker();
+		draw_mouse_crosshairs(mx,my);
 	});
 	
 	
