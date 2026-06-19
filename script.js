@@ -494,9 +494,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
 		let mtimerelative = mtime - nowdecimalhours;
 		
-		minutes = Math.floor((mtimerelative%1)*60).toString();
-		minutes = (minutes.length-1)?minutes:"0"+minutes;
-		let mtimerelativetext = Math.floor(mtimerelative/24) + "d " + Math.floor(mtimerelative%24) + "h " + minutes + "m";
+		minutes =  Math.floor((mtimerelative%1)*60);
+		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
+		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
+		let mtimerelativetext = days + "d " + hours + "h " + minutes + "m";
 		
 		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
 	});
