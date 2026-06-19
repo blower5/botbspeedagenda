@@ -220,8 +220,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let span = document.createElement("span");
 		
 		div.className = "fixed "+extraclass;
-		//1px added to height (moved down by 1px) so the 1px border lines up with the hour
-		div.style = "width:"+(w-10)+"px;height:"+(h-10)+"px;left:"+x+"px;top:"+(y+1)+"px;";
+		//1px added to y (moved down by 1px) so the 1px border lines up with the hour
+		div.style = "width:"+(w-10)+"px;height:"+(h-5)+"px;left:"+x+"px;top:"+(y+1)+"px;";
 		
 		span.textContent = txt.toString();
 		small.textContent = txt2.toString();
