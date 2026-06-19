@@ -496,7 +496,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		minutes = Math.floor((mtimerelative%1)*60).toString();
 		minutes = (minutes.length-1)?minutes:"0"+minutes;
-		let mtimerelativetext = Math.floor(mtime/24) + "d " + Math.floor(mtimerelative%24) + "h " + minutes + "m";
+		let mtimerelativetext = Math.floor(mtimerelative/24) + "d " + Math.floor(mtimerelative%24) + "h " + minutes + "m";
 		
 		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
 	});
