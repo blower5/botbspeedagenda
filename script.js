@@ -24,6 +24,14 @@ function assemble_datestring() {
 	return now.getFullYear().toString()+"-"+(m.length-1?m:"0"+m)+"-"+(d.length-1?d:"0"+d);
 }
 
+function clockstring(h,m) {
+	let h2 = h.toString();
+	h2 = (h2.length-1)?h2:"0"+h2;
+	let m2 = m.toString();
+	m2 = (m2.length-1)?m2:"0"+m2;
+	return h2 + ":" + m2;
+}
+
 function textdisplay(t) {
 	document.getElementById("textdisplay").textContent = t;
 }
@@ -220,8 +228,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let span = document.createElement("span");
 		
 		div.className = "fixed "+extraclass;
-		//1px added to y (moved down by 1px) so the 1px border lines up with the hour
-		div.style = "width:"+(w-10)+"px;height:"+(h-5)+"px;left:"+x+"px;top:"+(y+1)+"px;";
+		div.style = "width:"+(w-10)+"px;height:"+(h-5)+"px;left:"+x+"px;top:"+y+"px;";
 		
 		span.textContent = txt.toString();
 		small.textContent = txt2.toString();
@@ -257,9 +264,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			//filter out battles more than a week away
 			if (start_days_remaining > 6) return;
 			
-			let mt = st.getMinutes().toString();
-			mt = (mt.length-1)?mt:"0"+mt;
-			let timestring = st.getHours().toString() +":"+ mt;
+			let timestring = clockstring(st.getHours(),st.getMinutes());
 			
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
@@ -456,8 +461,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	
 	//the full draw cycle, which runs every minute
 	function draw() {
-
-		textdisplay("0/2 Refreshing... ");
+		
+		let now = new Date();
+		let clocks = clockstring(now.getHours(),now.getMinutes());
+		
+		textdisplay(clocks + " " + "0/2 Refreshing... ");
 		
 		//two seperate requests: /current, which shows all unclosed battles and future battles
 		//and a second one which grabs the battles that already happened today. this second one
@@ -471,9 +479,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 		let req = new XMLHttpRequest();
 		req.addEventListener('load', (event) => {
-			textdisplay("2/2 Loaded!");
+			textdisplay(clocks + " " + "2/2 Loaded!");
 			if (first_response) {
-				textdisplay("1/2 Loaded future battles...");
+				textdisplay(clocks + " " + "1/2 Loaded future battles...");
 				clear();
 				first_response = false;
 			}
@@ -486,9 +494,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 		reqold = new XMLHttpRequest();
 		reqold.addEventListener('load', (event) => {
-			textdisplay("2/2  Loaded!");
+			textdisplay(clocks + " " + "2/2  Loaded!");
 			if (first_response) {
-				textdisplay("1/2 Loaded past battles...");
+				textdisplay(clocks + " " + "1/2 Loaded past battles...");
 				clear();
 				first_response = false;
 			}
@@ -522,9 +530,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let mtime = Math.max(my - yunit,0)/(yunit/2) + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
 		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
 		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
-		let minutes = Math.floor((mtime%1)*60).toString();
-		minutes = (minutes.length-1)?minutes:"0"+minutes;
-		let mtimetext = mtimedaytext + ", " + Math.floor(mtime%24) + ":" + minutes;
+		let clocks = clockstring( Math.floor(mtime%24), Math.floor((mtime%1)*60).toString() );
+		let mtimetext = mtimedaytext + ", " + clocks;
 		
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
 		let mtimerelative = mtime - nowdecimalhours;
