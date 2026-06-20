@@ -192,9 +192,21 @@ canvas {
 	background: var(--color4) url(https://battleofthebits.com/styles/img/topNoiseShade.png);
 	background-repeat: repeat-x;
 	color: var(--color1);
+	width: 928px;
 }
 #shiftnote {
 	float: right;
 	font-style: italic;
 	color: var(--color14);
+}
+
+/* mobile styling */
+@media screen and (max-width: 750px) {
+	.logo {
+		font-size: 24px !important;
+		letter-spacing: -3px !important;
+	}
+	footer {
+		width: 928px;
+	}
 }
