@@ -593,16 +593,48 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	let MOUSE_LASTY = 0;
 	function draw_mouse_crosshairs(x=MOUSE_LASTX,y=MOUSE_LASTY) {
 		
-		if (x<xunit) return;
-		if (y<yunit) return;
-		
-		//snap x left to day boundary
-		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
+		let now = new Date();
 		
 		//snap y to 15 minutes
 		//one hour is yunit/2 so 15 minutes is yunit/8
 		let snappedy = y;
 		if (SHIFT) snappedy = Math.round((y-yunit)/(yunit/8))*(yunit/8)+yunit;
+		
+		// --- MOUSE TIME / TEXTDISPLAY HANDLING ------------------------------------------------------------------
+		
+		let hoursroundifshift = Math.max(snappedy - yunit,0)/(yunit/2);
+		
+		//mtime is decimal hours since the top left (12am at whatever day that is)
+		let mtime = hoursroundifshift + 24 * Math.floor( Math.max(x-xunit,0)/(xunit*6));
+		//use a Date() to convert timestamp to day name in user timezone
+		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
+		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
+		
+		let minutes = Math.floor( (mtime%1)*60 );
+		let clocks = clockstring( Math.floor(mtime%24), minutes.toString() );
+		let mtimetext = mtimedaytext + ", " + clocks;
+		
+		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
+		let mtimerelative = mtime - nowdecimalhours;
+		
+		//negative numbers need to be ceilinged or else -1 seconds gets floored to -1 days, -1 hours, -1 minutes.
+		let rminutes = Math.floor((mtimerelative%1)*60);
+		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
+		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
+		let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";
+		
+		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
+		
+		
+		
+		// ---- MOUSE GRAPHICS HANDLING ---------------------------------------------------------------------------
+		
+		
+		if (x<xunit) return;
+		if (y<yunit) return;
+		
+		//snap x left to day boundary
+		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
 		
 		ctxtop.fillStyle = palettecolor2;
 		ctxtop.strokeStyle = palettecolor2;
@@ -613,25 +645,47 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
 		
 		
-		//map mode (linear) to xhb size ( 1h, 2h, 4h )
-		let xhbsize = 2**(XHB_PREVIEW_MODE-2) * yunit;
+		//map mode (linear) to xhb size (0h, 1h, 2h, 4h )
+		let xhbhours = Math.floor(2**(XHB_PREVIEW_MODE-1));
 		
 		
 		if (XHB_PREVIEW_MODE != 0) {
+			//to correctly draw a line in x hours from now, we need to do it as a time operation and then
+			//convert back to coordinates.
+			
+			let mxhb_endtime = mtime + xhbhours;
+			
+			let mxhb_endtime_days = Math.floor(mxhb_endtime/24);
+			let mxhb_endtime_hours = mxhb_endtime%24;
+			
+			let mxhb_endtime_x = xunit + mxhb_endtime_days*xunit*6;
+			let mxhb_endtime_y = yunit + mxhb_endtime_hours*yunit/2;
+			
 			//dashed line one hour under the mouse
 			ctxtop.fillStyle = palettecolor14;
-			dashed_horizontal_line( snappedx, snappedy+xhbsize, xunit*6-paddingpx, linethickness, 20, 0.7, ctxtop );
+			dashed_horizontal_line( mxhb_endtime_x, mxhb_endtime_y, xunit*6-paddingpx, linethickness, 20, 0.7, ctxtop );
 			//...and corresponding dashed line on the ruler on the left
-			dashed_horizontal_line( 0, snappedy+xhbsize, xunit-paddingpx, linethickness, 4, 0.7, ctxtop );
+			dashed_horizontal_line( 0, mxhb_endtime_y, xunit-paddingpx, linethickness, 4, 0.7, ctxtop );
 			
-			//fill inbetween, to show how big the battle would be
+			
+			//now, draw a filled rectangle marking the xhb. this needs to be split in two if it crosses the day boundary.
+			//luckily we don't care if the first part goes past 24h because you can't see it.
 			ctxtop.fillStyle = palettecolor14+"44";
-			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,xhbsize ); 
-			//and on the ruler
-			ctxtop.fillRect( 0,snappedy,xunit-paddingpx,xhbsize ); 
+			
+			let clamped_hours = Math.min( xhbhours+(mtime%24), 24 ) - (mtime%24);
+			
+			//first part on the day
+			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx, clamped_hours*yunit/2 ); 
+			//first part on the ruler
+			ctxtop.fillRect( 0,snappedy,xunit-paddingpx, clamped_hours*yunit/2 ); 
+			
+			if (snappedx != mxhb_endtime_x) {
+				//second part on the day
+				ctxtop.fillRect( mxhb_endtime_x,yunit,xunit*6-paddingpx, mxhb_endtime_hours*yunit/2 ); 
+				//second part on the ruler
+				ctxtop.fillRect( 0,yunit,xunit-paddingpx,  mxhb_endtime_hours*yunit/2 ); 
+			}
 		}
-		
-		//ctxtop.fillRect( x,y-10,linethickness,20 );
 		
 		//endless fun was had
 		
@@ -650,6 +704,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		CROSSHAIRFRAME++;
 		CROSSHAIRFRAME%=419;
 		
+		//sometimes this function gets called to update the mouse crosshairs, but whatever is calling it
+		//doesn't know where the mouse is, only that it needs to be updated. storing the last position in
+		//a global and defaulting to it lets us call the function anywhere we want.
 		MOUSE_LASTX = x;
 		MOUSE_LASTY = y;
 	}
@@ -730,38 +787,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	
 	//now set up input handling functions.
 	document.getElementById("maindiv").addEventListener('mousemove', (event) => {
-		let now = new Date();
-		
 		let m = document.getElementById("maindiv").getBoundingClientRect();
 		let mx = event.x - m.x;
 		let my = event.y - m.y;
-		
-		//in decimal hours from 12AM the first listed day
-		//rounds to nearest .25 when shift is held
-		//this needs to be applied to the mouse coordinates directly for parity
-		//with the draw_mouse_crosshairs() code, i.e. so they always line up.
-		let hoursroundifshift =                   Math.max(my - yunit,0)/(yunit/2);
-		if (SHIFT) hoursroundifshift = Math.round(Math.max(my - yunit,0)/(yunit/8))/4;
-		
-		let mtime = hoursroundifshift + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
-		//use a Date() to convert timestamp to day name in user timezone
-		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
-		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
-		
-		let minutes = Math.floor( (mtime%1)*60 );
-		let clocks = clockstring( Math.floor(mtime%24), minutes.toString() );
-		let mtimetext = mtimedaytext + ", " + clocks;
-		
-		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
-		let mtimerelative = mtime - nowdecimalhours;
-		
-		//negative numbers need to be ceilinged or else -1 seconds gets floored to -1 days, -1 hours, -1 minutes.
-		let rminutes = Math.floor((mtimerelative%1)*60);
-		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
-		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
-		let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";
-		
-		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
 		
 		ctxtop.clearRect(0, 0, width, height);
 		draw_current_time_marker();
