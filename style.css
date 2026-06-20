@@ -28,9 +28,7 @@ body {
   padding-left: 10px;
   padding-right: 10px;
   padding-bottom: 1px;
-  width: 100%;
-  max-width: 960px;
-  min-width: 450px;
+  width: 960px;
   height:auto;
 }
 .inner {
@@ -208,6 +206,13 @@ footer {
 	.logo {
 		font-size: 24px !important;
 		letter-spacing: -3px !important;
+	}
+	#PALETTE_MENU {
+		float: left;
+		margin-left: calc( max( 100vw - 220px , 250px) );
+	}
+	#top {
+		left:20px;
 	}
 	#shiftnote {
 		display: none;
