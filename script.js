@@ -36,7 +36,7 @@ function clockstring(h,m) {
 }
 
 function textdisplay(t) {
-	document.getElementById("textdisplay").textContent = t;
+	document.getElementById("textdisplaywrite").textContent = t;
 }
 
 //The text shadow color is the average of all 5 palette colors. Really!
@@ -103,6 +103,22 @@ function setPaletteCookies(botbpalette) {
 	location.reload()
 }
 
+function updateSpritesheet() {
+	let spritesheetidreq = new XMLHttpRequest();
+	spritesheetidreq.addEventListener('load', (event) => {
+		let spritesheetversion = spritesheetidreq.response.spriteshit_version;
+		
+		let lnk = document.createElement("link");
+		lnk.rel = "stylesheet";
+		lnk.href = "https://battleofthebits.com/styles/spriteshit/"+spritesheetversion+".css";
+		
+		document.head.appendChild(lnk);
+	});
+	spritesheetidreq.open('GET', 'https://battleofthebits.com/api/v1/spriteshit/version/');
+	spritesheetidreq.responseType = 'json';
+	spritesheetidreq.send();
+}
+
 function skull(){
 	s = document.createElement("style")
 	s.textContent = `
@@ -124,6 +140,8 @@ addEventListener("keyup", (event) => {
 })
 
 window.addEventListener('DOMContentLoaded', (event) => {
+	updateSpritesheet();
+	
 	let canvas = document.getElementById('main');
 	let canvastop = document.getElementById('top');
 	let width = canvas.clientWidth;   //probably 960px
@@ -237,6 +255,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let maindiv = document.getElementById("maindiv");
 		let a = document.createElement("a");
 		let div = document.createElement("div");
+		let divicon = document.createElement("div");
 		let smalltime = document.createElement("small");
 		let span = document.createElement("span");
 		
@@ -246,6 +265,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		div.className = "fixed "+extraclass;
 		//min height has to be added here to stop things from shrinking on hover
 		div.style = "width:"+(w-10)+"px;height:"+(h-5)+"px;min-height:"+(h-5)+"px;left:"+x+"px;top:"+y+"px;";
+		
+		//icon
+		divicon.className = "battleicon botb-icon icons-formats-"+battle.format_tokens[0];
 		
 		//battle title
 		span.textContent = txt.toString();
@@ -258,6 +280,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		divhost.textContent = battle.hosts_names;
 		
 		
+		div.appendChild(divicon);
 		div.appendChild(smalltime);
 		div.appendChild(span);
 		
@@ -358,7 +381,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 						xunit*6*between_days_remaining+xunit*4,
 						yunit+yunit/2*between_decimal_hours_absolute+3,
 						palettecolor14,
-						palettecolorshadow
+						palettecolorshadow+"55"
 					)
 				}
 			}
@@ -615,7 +638,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
 		let mtimerelative = mtime - nowdecimalhours;
 		
-		let rminutes =    (mtimerelative<0) ? Math.ceil((mtimerelative%1)*60) : Math.floor((mtimerelative%1)*60);
+		let rminutes = Math.floor((mtimerelative%1)*60);
 		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
 		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
 		let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";

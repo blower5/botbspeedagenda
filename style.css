@@ -108,6 +108,10 @@ input {
 	top: 70px;
 }
 
+/* icon */
+.battle .battleicon {
+	margin-right: 3px;
+}
 /* small is only used in the battle divs for the timestamp */
 .battle small {
 	font-size: 9px;
@@ -134,7 +138,7 @@ input {
 	font-size: 11px;
 	hyphens: auto;
 	overflow: hidden;
-	padding: 2px 4px;
+	padding: 3px 4px;
 	line-height: 11px;
 	border-radius: 4px;
 	background-image: url(https://battleofthebits.com/styles/img/topNoiseShade.png);
@@ -142,9 +146,10 @@ input {
 	height: 0px;
 }
 .battle:hover {
+	border: 1px var(--color4) solid;	
 	color: var(--color4);
 	background-color: var(--color1);
-	border: 1px var(--color4);	
+	
 	height: fit-content !important; /* has to override element style */
 	z-index: 10;
 }
@@ -187,4 +192,9 @@ canvas {
 	background: var(--color4) url(https://battleofthebits.com/styles/img/topNoiseShade.png);
 	background-repeat: repeat-x;
 	color: var(--color1);
+}
+#shiftnote {
+	float: right;
+	font-style: italic;
+	color: var(--color14);
 }
