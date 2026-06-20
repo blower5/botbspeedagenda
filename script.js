@@ -1,3 +1,6 @@
+let SHIFT = 0;
+
+
 function parse_day(d) {
 	return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
 }
@@ -84,13 +87,13 @@ function updatePalette(id) {
 
 //return value for a cookie's name
 function getCookie(name){
-	var pattern = RegExp(name + "=.[^;]*")
-	var matched = document.cookie.match(pattern)
+	var pattern = RegExp(name + "=.[^;]*");
+	var matched = document.cookie.match(pattern);
 	if(matched){
-		var cookie = matched[0].split('=')
-		return cookie[1]
+		var cookie = matched[0].split('=');
+		return cookie[1];
 	}
-	return false
+	return false;
 }
 
 //synthesize a big hex number of all the hexcodes concatenated and store
@@ -112,6 +115,14 @@ function skull(){
 }
 
 
+//handle shift key
+addEventListener("keydown", (event) => { 
+	SHIFT = event.shiftKey;
+})
+addEventListener("keyup", (event) => { 
+	SHIFT = event.shiftKey;
+})
+
 window.addEventListener('DOMContentLoaded', (event) => {
 	let canvas = document.getElementById('main');
 	let canvastop = document.getElementById('top');
@@ -129,10 +140,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	var storedPalette = getCookie("palette");
 	//synthesizing more colors here, for more complex visuals
 	//quite annoyingly this needs to be both js and css variables
-	let [palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45] = ["#cacaca","#f76700","#4a3553","#000000cc","#3e2239","#666666","#251a29","#1f111c"];
+	let [palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45,palettecolor14] = ["#cacaca","#f76700","#4a3553","#000000cc","#3e2239","#666666","#251a29","#1f111c","#656565"];
 	if (storedPalette) {
 		let c34 = average_two_colors(storedPalette.slice(12,18),storedPalette.slice(18,24));
 		let c45 = average_two_colors(storedPalette.slice(18,24),storedPalette.slice(24,30));
+		let c14 = average_two_colors(storedPalette.slice(0,6),storedPalette.slice(18,24));
 		let ts  = getTextShadow(storedPalette);
 		document.documentElement.style.cssText = "--color1: #"+storedPalette.slice(0,6)+
 		"; --color2: #"+storedPalette.slice(6,12)+
@@ -142,8 +154,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		"; --textshadow: #"+ts+
 		"; --color34: #"+c34+
 		"; --color45: #"+c45+
+		"; --color14: #"+c14+
 		";";
-		[palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45] = [storedPalette.slice(0,6),storedPalette.slice(6,12),storedPalette.slice(12,18),storedPalette.slice(18,24),storedPalette.slice(24,30),ts,c34,c45].map(c => "#"+c.toString());
+		[palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45,palettecolor14] = [storedPalette.slice(0,6),storedPalette.slice(6,12),storedPalette.slice(12,18),storedPalette.slice(18,24),storedPalette.slice(24,30),ts,c34,c45,c14].map(c => "#"+c.toString());
 	}
 	
 	//run on enter key in palette text input
@@ -258,11 +271,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	//draws boxes for every battle in a list, takes 2 colors to alternate between
 	function draw_battle_list(battles_list, old=false) {
-		for (let i in battles_list) {
 		
+		//the list needs to be sorted by start time so the inbetween-free-time calculation works properly
+		battles_list.sort( (a,b) => (a["period_data"][0]["start"] - b["period_data"][0]["start"]) );
+		
+		let lastet = 0;
+		
+		for (let i in battles_list) {
+	
 			//filter non-xhb out
-			if (battles_list[i].type != 3) return;
+			if (battles_list[i].type != 3) continue;
 
+			//assign class names (different colors)
 			let cl = i%2?"battle newbattle1":"battle newbattle2";
 			if (old) cl = i%2?"battle oldbattle1":"battle oldbattle2";
 			
@@ -277,7 +297,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let end_decimal_hours_absolute = et.getHours() + et.getMinutes()/60;
 			
 			//filter out battles more than a week away
-			if (start_days_remaining > 6) return;
+			if (start_days_remaining > 6) continue;
 			
 			let timestring = clockstring(st.getHours(),st.getMinutes());
 			
@@ -294,7 +314,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					battles_list[i],
 					cl);
 				
-				if (end_days_remaining > 6) return;
+				if (end_days_remaining > 6) continue;
 				
 				drawdivlink(
 					xunit*6*end_days_remaining+xunit,
@@ -316,6 +336,34 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					timestring,
 					battles_list[i], cl);
 			}
+			
+			
+			//list the free time inbetween the battles
+			if (lastet) {		
+				freetimedecimalhours = (st.getTime() - lastet.getTime())/3600000;
+				//filter out sub 30 minutes
+				if (freetimedecimalhours>.5) {
+					let fh = Math.floor(freetimedecimalhours);
+					let fm = Math.floor((freetimedecimalhours%1)*60);
+					let timestring = fh?(fh + "h " + fm + "m"):(fm + "m");
+					
+					betweentimetimestamp = new Date( (st.getTime() + lastet.getTime())/2 );
+					let between_days_remaining = days_from_epoch(betweentimetimestamp.getTime()) - days_from_epoch(now.getTime());
+					let between_decimal_hours_absolute = betweentimetimestamp.getHours() + betweentimetimestamp.getMinutes()/60;
+					
+					ctx.font = fontpx + "px sans-serif";
+					ctx.textAlign = "center";
+					draw_outlined_text( 
+						"free: " + timestring,
+						xunit*6*between_days_remaining+xunit*4,
+						yunit+yunit/2*between_decimal_hours_absolute+3,
+						palettecolor14,
+						palettecolorshadow
+					)
+				}
+			}
+			
+			lastet = et;
 		}
 	}
 
@@ -440,13 +488,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		//snap x left to day boundary
 		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
 		
+		//snap y to 5 minutes
+		//one hour is yunit/2 so 15 minutes is yunit/8
+		let snappedy = y;
+		if (SHIFT) snappedy = Math.round((y-yunit)/(yunit/8))*(yunit/8)+yunit;
+		
 		ctxtop.fillStyle = palettecolor2;
 		ctxtop.strokeStyle = palettecolor2;
 		
 		//line across the day the mouse is over
-		ctxtop.fillRect( snappedx,y,xunit*6-paddingpx,linethickness );
+		ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,linethickness );
 		//line that marks the ruler on the left
-		ctxtop.fillRect( 0,y,xunit-paddingpx,linethickness );
+		ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
 		
 		//ctxtop.fillRect( x,y-10,linethickness,20 );
 		
@@ -545,10 +598,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let my = event.y - m.y;
 		
 		//in decimal hours from 12AM the first listed day
-		let mtime = Math.max(my - yunit,0)/(yunit/2) + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
+		//rounds to nearest .25 when shift is held
+		let hoursroundifshift = Math.max(my - yunit,0)/(yunit/2);
+		if (SHIFT) hoursroundifshift = Math.round(Math.max(my - yunit,0)/(yunit/8))/4;
+		
+		let mtime = hoursroundifshift + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
 		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
 		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
-		let clocks = clockstring( Math.floor(mtime%24), Math.floor((mtime%1)*60).toString() );
+		
+		let minutes = Math.floor( (mtime%1)*60 );
+	
+		
+		let clocks = clockstring( Math.floor(mtime%24), minutes.toString() );
 		let mtimetext = mtimedaytext + ", " + clocks;
 		
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
