@@ -145,7 +145,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	let canvas = document.getElementById('main');
 	let canvastop = document.getElementById('top');
 	let width = canvas.clientWidth;   //probably 960px
-	let height = canvas.clientHeight; //probably 720px
+	let height = canvas.clientHeight; //probably 800px
 	let ctx = canvas.getContext('2d');
 	let ctxtop = canvastop.getContext('2d');
 
@@ -229,7 +229,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	topshadegradient.addColorStop(0, "#8A8A8A2B");
 	topshadegradient.addColorStop(1, "#8A8A8A00");
 	
-	
+	//text with a dropshadow. convolution kernel:
+	//   t
+ 	//  sss
+	//   s
+	//you can pass context to this function if you want, but it defaults to ctx
+	//(which is the lower, main context.) Honestly I'm just writing this because
+	//I know in my heart that cx=ctx is a stupid thing to type and I should
+	//change it.
 	function draw_outlined_text(t,x,y,color="white",coloroutline="black",cx=ctx) {
 		cx.fillStyle = coloroutline;
 		cx.fillText(t,x-1,y+1);
@@ -250,7 +257,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		maindiv.appendChild(div);
 	}
 	
-	//recreation of fillRect with divs. this one is a hyperlink.
+	//actually a speciallized battle div drawer. txt is title, txt2 is timestamp.
 	function drawdivlink(x,y,w,h,txt,txt2,battle,extraclass=""){
 		let maindiv = document.getElementById("maindiv");
 		let a = document.createElement("a");
@@ -278,7 +285,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		divformat.textContent = battle.format_tokens[0];
 		divhost.className = "smalldiv";
 		divhost.textContent = battle.hosts_names;
-		
+	
+		// a
+		//  | div
+		//  |   | divicon
+		//  |   | smalltime
+		//  |   | span
+		//  |   | divformat
+		//  |   | divhost
 		
 		div.appendChild(divicon);
 		div.appendChild(smalltime);
@@ -292,10 +306,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		maindiv.appendChild(a);
 	}
 
-	//draws boxes for every battle in a list, takes 2 colors to alternate between
+	//draws boxes for every battle in a list. old switches the color palette.
 	function draw_battle_list(battles_list, old=false) {
 		
-		//the list needs to be sorted by start time so the inbetween-free-time calculation works properly
+		//the list needs to be sorted by start time so the inbetween-free-time calculation (at the end)
+		//works properly. also means function mutates battles_list.
 		battles_list.sort( (a,b) => (a["period_data"][0]["start"] - b["period_data"][0]["start"]) );
 		
 		let lastet = 0;
@@ -337,8 +352,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					battles_list[i],
 					cl);
 				
+				//this breaks out of the for loop! this battle will not trigger
+				//the free time calculation at the bottom, although if it's a
+				//week away at 12am, maybe it doesn't matter?
 				if (end_days_remaining > 6) continue;
 				
+				//this is the residual part of the xhb the next day after 12am.
+				//it has no name or timestamp so it is visually different from
+				//an xhb that starts at 12am. drawdivlink() still draws its
+				//format icon.
 				drawdivlink(
 					xunit*6*end_days_remaining+xunit,
 					yunit,
@@ -350,6 +372,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					cl);
 				
 			} else {
+				//the standard xhb draw call.
 				drawdivlink(
 					xunit*6*start_days_remaining+xunit,
 					yunit+yunit/2*start_decimal_hours_absolute,
@@ -362,15 +385,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			
 			
 			//list the free time inbetween the battles
+			//  [____________]
+			//    free: 30m
+			//  [````````````]
+			//  ^ my awesome diagram
 			if (lastet) {		
 				freetimedecimalhours = (st.getTime() - lastet.getTime())/3600000;
 				//filter out sub 30 minutes
 				if (freetimedecimalhours>.5) {
 					let fh = Math.floor(freetimedecimalhours);
 					let fm = Math.floor((freetimedecimalhours%1)*60);
-					let timestring = fh?(fh + "h " + fm + "m"):(fm + "m");
+					let timestring = fh ? (fh+"h "+fm+"m") : (fm+"m");
 					
-					betweentimetimestamp = new Date( (st.getTime() + lastet.getTime())/2 );
+					//this text should be placed at the midpoint time between the end of the first
+					//xhb and the start of the second. we'll just average the two and use the same
+					//math we've been using to convert the timestamp into x,y pos.
+					let betweentimetimestamp = new Date( (st.getTime() + lastet.getTime())/2 );
 					let between_days_remaining = days_from_epoch(betweentimetimestamp.getTime()) - days_from_epoch(now.getTime());
 					let between_decimal_hours_absolute = betweentimetimestamp.getHours() + betweentimetimestamp.getMinutes()/60;
 					
@@ -404,6 +434,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctx.beginPath();
 		ctx.roundRect(0, 0, xunit-paddingpx, yunit-paddingpx, borderradius);
 		ctx.fill()
+		//top left box top shading
 		ctx.fillStyle = topshadegradient;
 		ctx.beginPath();
 		ctx.roundRect(0, 0, xunit-paddingpx, yunit-paddingpx, borderradius);
@@ -422,7 +453,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		ctx.font = fontpx + "px sans-serif";
 		for (let j=	0; j < 24; j++) {	
-			//ruler 24 hour grid
+			//ruler 24 hour grid (skips 0 and 12)
 			if (j%12!=0) {
 				ctx.fillStyle = bggridcolor;
 				ctx.fillRect(0, yunit/2*j + yunit + 1, xunit-paddingpx, linethickness);
@@ -443,6 +474,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			ctx.roundRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx, borderradius);
 			ctx.fill();
 			
+			//top shading
 			ctx.fillStyle = topshadegradient;
 			ctx.beginPath();
 			ctx.roundRect(xunit*6*i+xunit, 0, xunit*6-paddingpx, yunit-paddingpx, borderradius);
@@ -479,23 +511,26 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let now = new Date();
 		let current_decimal_hours = now.getHours() + now.getMinutes()/60;
 		
-		//dropshadow
+		//line dropshadow
 		ctxtop.fillStyle = fontoutlinecolor;
 		ctxtop.fillRect(xunit, yunit+yunit/2*current_decimal_hours, xunit*6-paddingpx, linethickness+1);
 		
+		//circle dropshadow
 		ctxtop.beginPath();
 		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours+1, 5, 0, 6.28);
 		ctxtop.fill();		
 
 		
-		
+		//line
 		ctxtop.fillStyle = palettecolor1;
 		ctxtop.fillRect(xunit, yunit+yunit/2*current_decimal_hours, xunit*6-paddingpx, linethickness);
 		
+		//big 5px circle
 		ctxtop.beginPath();
 		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours, 5, 0, 6.28);
 		ctxtop.fill();		
 		
+		//little 3px circle
 		ctxtop.fillStyle = palettecolor2;
 		ctxtop.beginPath();
 		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours, 3, 0, 6.28);
@@ -511,7 +546,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		//snap x left to day boundary
 		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
 		
-		//snap y to 5 minutes
+		//snap y to 15 minutes
 		//one hour is yunit/2 so 15 minutes is yunit/8
 		let snappedy = y;
 		if (SHIFT) snappedy = Math.round((y-yunit)/(yunit/8))*(yunit/8)+yunit;
@@ -553,7 +588,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	
 	
 	
-	//the full draw cycle, which runs every minute
+	//the full draw cycle, which runs every 2 minutes
 	function draw() {
 		
 		let now = new Date();
@@ -603,8 +638,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		reqold.send(  encodeURI('sort=start&desc=true&conditions[0][property]=end&conditions[0][operator]=LIKE&conditions[0][operand]='+assemble_datestring()+'%')  );
 	}
 	
-	//if we get the graphix up as soon as possible it looks better, so extra half-draw call before the
-	//http requests come in
+	//if we get the graphix up as soon as possible it looks better, so extra half-draw call 
+	//before the http requests come in
+	
+	//the divs that represent battles are sandwiched
+	//between two canvases, the bottom is the background with the days, hour-ruler, and grid,
+	//the top one has the mouse crosshairs and the current time marker-pin-thing.
+	//clear() draws the bottom canvas, which is called right after the http requests return,
+	//and then right after, the battle divs are drawn. then the topcanvas is drawn, although
+	//moving the mouse over the agenda also redraws the topcanvas.
 	clear();
 	draw_current_time_marker();
 	
@@ -622,22 +664,24 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		//in decimal hours from 12AM the first listed day
 		//rounds to nearest .25 when shift is held
-		let hoursroundifshift = Math.max(my - yunit,0)/(yunit/2);
+		//this needs to be applied to the mouse coordinates directly for parity
+		//with the draw_mouse_crosshairs() code, i.e. so they always line up.
+		let hoursroundifshift =                   Math.max(my - yunit,0)/(yunit/2);
 		if (SHIFT) hoursroundifshift = Math.round(Math.max(my - yunit,0)/(yunit/8))/4;
 		
 		let mtime = hoursroundifshift + 24 * Math.floor( Math.max(mx-xunit,0)/(xunit*6));
+		//use a Date() to convert timestamp to day name in user timezone
 		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
 		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
 		
 		let minutes = Math.floor( (mtime%1)*60 );
-	
-		
 		let clocks = clockstring( Math.floor(mtime%24), minutes.toString() );
 		let mtimetext = mtimedaytext + ", " + clocks;
 		
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
 		let mtimerelative = mtime - nowdecimalhours;
 		
+		//negative numbers need to be ceilinged or else -1 seconds gets floored to -1 days, -1 hours, -1 minutes.
 		let rminutes = Math.floor((mtimerelative%1)*60);
 		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
 		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
