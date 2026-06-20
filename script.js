@@ -615,7 +615,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
 		let mtimerelative = mtime - nowdecimalhours;
 		
-		let rminutes =  Math.floor((mtimerelative%1)*60);
+		let rminutes =    (mtimerelative<0) ? Math.ceil((mtimerelative%1)*60) : Math.floor((mtimerelative%1)*60);
 		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
 		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
 		let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";
