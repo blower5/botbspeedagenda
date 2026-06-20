@@ -1,5 +1,5 @@
 let SHIFT = 0;
-
+let XHB_PREVIEW_MODE = 0;
 
 function parse_day(d) {
 	return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
@@ -131,17 +131,14 @@ function skull(){
 }
 
 
-//handle shift key
-addEventListener("keydown", (event) => { 
-	SHIFT = event.shiftKey;
-})
-addEventListener("keyup", (event) => { 
-	SHIFT = event.shiftKey;
-})
-
 window.addEventListener('DOMContentLoaded', (event) => {
+	
 	updateSpritesheet();
 	
+	//define 'globals' for the drawing functions.
+	//if we wanted to define all the drawing functions outside
+	//the event listener and not use globals we would have to
+	//pass ctx into the functions every time which is annoying.
 	let canvas = document.getElementById('main');
 	let canvastop = document.getElementById('top');
 	let width = canvas.clientWidth;   //probably 960px
@@ -157,24 +154,67 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//
 	var storedPalette = getCookie("palette");
 	//synthesizing more colors here, for more complex visuals
+	//c34 is between color 3 and 4, c45 is between 4 and 5...
 	//quite annoyingly this needs to be both js and css variables
-	let [palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45,palettecolor14] = ["#cacaca","#f76700","#4a3553","#000000cc","#3e2239","#666666","#251a29","#1f111c","#656565"];
+	//first, define defaults (this is the "volcanic" palette)
+	let [
+		palettecolor1,
+		palettecolor2,
+		palettecolor3,
+		palettecolor4,
+		palettecolor5,
+		palettecolorshadow,
+		palettecolor34,
+		palettecolor45,
+		palettecolor14
+	] = [
+		"#cacaca",
+		"#f76700",
+		"#4a3553",
+		"#000000cc",
+		"#3e2239",
+		"#666666",
+		"#251a29",
+		"#1f111c",
+		"#656565"
+	];
 	if (storedPalette) {
 		let c34 = average_two_colors(storedPalette.slice(12,18),storedPalette.slice(18,24));
 		let c45 = average_two_colors(storedPalette.slice(18,24),storedPalette.slice(24,30));
 		let c14 = average_two_colors(storedPalette.slice(0,6),storedPalette.slice(18,24));
 		let ts  = getTextShadow(storedPalette);
-		document.documentElement.style.cssText = "--color1: #"+storedPalette.slice(0,6)+
-		"; --color2: #"+storedPalette.slice(6,12)+
-		"; --color3: #"+storedPalette.slice(12,18)+
-		"; --color4: #"+storedPalette.slice(18,24)+
-		"cc; --color5: #"+storedPalette.slice(24,30)+
-		"; --textshadow: #"+ts+
-		"; --color34: #"+c34+
-		"; --color45: #"+c45+
-		"; --color14: #"+c14+
-		";";
-		[palettecolor1,palettecolor2,palettecolor3,palettecolor4,palettecolor5,palettecolorshadow,palettecolor34,palettecolor45,palettecolor14] = [storedPalette.slice(0,6),storedPalette.slice(6,12),storedPalette.slice(12,18),storedPalette.slice(18,24),storedPalette.slice(24,30),ts,c34,c45,c14].map(c => "#"+c.toString());
+		document.documentElement.style.cssText = 
+			   "--color1: #"    + storedPalette.slice(0,6)
+			+"; --color2: #"    + storedPalette.slice(6,12)
+			+"; --color3: #"    + storedPalette.slice(12,18)
+			+"; --color4: #"    + storedPalette.slice(18,24) + "cc"
+			+"; --color5: #"    + storedPalette.slice(24,30)
+			+"; --textshadow: #"+ ts
+			+"; --color34: #"   + c34
+			+"; --color45: #"   + c45
+			+"; --color14: #"   + c14
+			+";";
+		[
+			palettecolor1,
+			palettecolor2,
+			palettecolor3,
+			palettecolor4,
+			palettecolor5,
+			palettecolorshadow,
+			palettecolor34,
+			palettecolor45,
+			palettecolor14
+		] = [
+			storedPalette.slice(0,6),
+			storedPalette.slice(6,12),
+			storedPalette.slice(12,18),
+			storedPalette.slice(18,24),
+			storedPalette.slice(24,30),
+			ts,
+			c34,
+			c45,
+			c14
+		].map(c => "#"+c.toString());
 	}
 	
 	//run on enter key in palette text input
@@ -188,7 +228,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 
 
-
+	//define units
 
 	//columns are drawn in this ratio
 	//| 1 |   6   |   6   |   6   |   6   |   6   |   6   |   6   | 
@@ -225,9 +265,20 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	let borderradius = 4;
 	
+	//recreation of botb's "topnoisegradient" texture so the canvas stuff matches the divs.
 	let topshadegradient = ctx.createLinearGradient(0,0,0,35);
 	topshadegradient.addColorStop(0, "#8A8A8A2B");
 	topshadegradient.addColorStop(1, "#8A8A8A00");
+	
+	
+	function dashed_horizontal_line(x, y, w, thickness, dashes, dashratio, cx=ctx) {
+		let onedash = w/dashes;
+		for (let i = 0; i<dashes; i++) {
+			//extra term (onedash*(1-dashratio))/dashes*i
+			//makes up the extra space so the line ends on a dash and not a space
+			cx.fillRect( x + onedash*i + (onedash*(1-dashratio))/dashes*i, y, onedash*dashratio, thickness);
+		}
+	}
 	
 	//text with a dropshadow. convolution kernel:
 	//   t
@@ -411,7 +462,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 						xunit*6*between_days_remaining+xunit*4,
 						yunit+yunit/2*between_decimal_hours_absolute+3,
 						palettecolor14,
-						palettecolorshadow+"55"
+						fontoutlinecolor
 					)
 				}
 			}
@@ -536,9 +587,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctxtop.arc(xunit, yunit+yunit/2*current_decimal_hours, 3, 0, 6.28);
 		ctxtop.fill();
 	}
-
+	
 	let CROSSHAIRFRAME = 0;
-	function draw_mouse_crosshairs(x,y) {
+	let MOUSE_LASTX = 0;
+	let MOUSE_LASTY = 0;
+	function draw_mouse_crosshairs(x=MOUSE_LASTX,y=MOUSE_LASTY) {
 		
 		if (x<xunit) return;
 		if (y<yunit) return;
@@ -559,6 +612,25 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		//line that marks the ruler on the left
 		ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
 		
+		
+		//map mode (linear) to xhb size ( 1h, 2h, 4h )
+		let xhbsize = 2**(XHB_PREVIEW_MODE-2) * yunit;
+		
+		
+		if (XHB_PREVIEW_MODE != 0) {
+			//dashed line one hour under the mouse
+			ctxtop.fillStyle = palettecolor14;
+			dashed_horizontal_line( snappedx, snappedy+xhbsize, xunit*6-paddingpx, linethickness, 20, 0.7, ctxtop );
+			//...and corresponding dashed line on the ruler on the left
+			dashed_horizontal_line( 0, snappedy+xhbsize, xunit-paddingpx, linethickness, 4, 0.7, ctxtop );
+			
+			//fill inbetween, to show how big the battle would be
+			ctxtop.fillStyle = palettecolor14+"44";
+			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,xhbsize ); 
+			//and on the ruler
+			ctxtop.fillRect( 0,snappedy,xunit-paddingpx,xhbsize ); 
+		}
+		
 		//ctxtop.fillRect( x,y-10,linethickness,20 );
 		
 		//endless fun was had
@@ -577,8 +649,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		CROSSHAIRFRAME++;
 		CROSSHAIRFRAME%=419;
+		
+		MOUSE_LASTX = x;
+		MOUSE_LASTY = y;
 	}
-	
 	
 	
 	
@@ -654,7 +728,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	
 	setInterval(draw,120000);
 	
-	//now set up mouse handling functions for the text display.
+	//now set up input handling functions.
 	document.getElementById("maindiv").addEventListener('mousemove', (event) => {
 		let now = new Date();
 		
@@ -693,8 +767,41 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		draw_current_time_marker();
 		draw_mouse_crosshairs(mx,my);
 	});
+		
+	//handle shift key
+	addEventListener("keydown", (event) => { 
+		SHIFT = event.shiftKey;
+		
+		ctxtop.clearRect(0, 0, width, height);
+		draw_current_time_marker();
+		draw_mouse_crosshairs();
+	});
 	
+	addEventListener("keyup", (event) => { 
+		SHIFT = event.shiftKey;
+		
+		ctxtop.clearRect(0, 0, width, height);
+		draw_current_time_marker();
+		draw_mouse_crosshairs();
+	});
 	
+	//handle xhb size previewing
+	addEventListener('keydown', (event) => {
+		if (event.key == " ") {
+			XHB_PREVIEW_MODE++;
+			XHB_PREVIEW_MODE%=4;
+			
+			XHB_PREVIEW_MODE ?
+				textdisplay( "Previewing a " + [,"OHB.","2HB.","4HB."][XHB_PREVIEW_MODE])
+				:
+				textdisplay( "Preview disabled." );
+			
+			ctxtop.clearRect(0, 0, width, height);
+			draw_current_time_marker();
+			draw_mouse_crosshairs();
+		}
+	});
+
 });
 
 

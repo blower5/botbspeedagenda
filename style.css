@@ -185,6 +185,9 @@ canvas {
 	pointer-events: none;
 }
 
+footer {
+	width: 928px;
+}
 #textdisplay {
 	margin-right: 4px;
 	padding: 4px 6px;
@@ -206,7 +209,7 @@ canvas {
 		font-size: 24px !important;
 		letter-spacing: -3px !important;
 	}
-	footer {
-		width: 928px;
+	#shiftnote {
+		display: none;
 	}
 }
