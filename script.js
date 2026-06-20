@@ -220,23 +220,38 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	}
 	
 	//recreation of fillRect with divs. this one is a hyperlink.
-	function drawdivlink(x,y,w,h,txt,txt2 = "",hrf="",extraclass=""){
+	function drawdivlink(x,y,w,h,txt,txt2,battle,extraclass=""){
 		let maindiv = document.getElementById("maindiv");
 		let a = document.createElement("a");
 		let div = document.createElement("div");
-		let small = document.createElement("small");
+		let smalltime = document.createElement("small");
 		let span = document.createElement("span");
 		
+		let divformat = document.createElement("div");
+		let divhost = document.createElement("div");
+		
 		div.className = "fixed "+extraclass;
-		div.style = "width:"+(w-10)+"px;height:"+(h-5)+"px;left:"+x+"px;top:"+y+"px;";
+		//min height has to be added here to stop things from shrinking on hover
+		div.style = "width:"+(w-10)+"px;height:"+(h-5)+"px;min-height:"+(h-5)+"px;left:"+x+"px;top:"+y+"px;";
 		
+		//battle title
 		span.textContent = txt.toString();
-		small.textContent = txt2.toString();
+		//timestamp
+		smalltime.textContent = txt2.toString();
 		
-		div.appendChild(small);
+		divformat.className = "smalldiv smalldivspacer";
+		divformat.textContent = battle.format_tokens[0];
+		divhost.className = "smalldiv";
+		divhost.textContent = battle.hosts_names;
+		
+		
+		div.appendChild(smalltime);
 		div.appendChild(span);
 		
-		a.href = hrf;
+		div.appendChild(divformat);
+		div.appendChild(divhost);
+		
+		a.href = battle.profileURL;
 		a.appendChild(div);
 		maindiv.appendChild(a);
 	}
@@ -276,7 +291,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					yunit/2*(24 - start_decimal_hours_absolute),
 					battles_list[i].title,
 					timestring,
-					battles_list[i].profileURL,
+					battles_list[i],
 					cl);
 				
 				if (end_days_remaining > 6) return;
@@ -288,7 +303,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					yunit/2*end_decimal_hours_absolute,
 					"...",
 					"",
-					battles_list[i].profileURL,
+					battles_list[i],
 					cl);
 				
 			} else {
@@ -299,7 +314,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					yunit/2*(end_decimal_hours_absolute - start_decimal_hours_absolute),
 					battles_list[i].title,
 					timestring,
-					battles_list[i].profileURL, cl);
+					battles_list[i], cl);
 			}
 		}
 	}
@@ -427,8 +442,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		ctxtop.fillStyle = palettecolor2;
 		ctxtop.strokeStyle = palettecolor2;
-
+		
+		//line across the day the mouse is over
 		ctxtop.fillRect( snappedx,y,xunit*6-paddingpx,linethickness );
+		//line that marks the ruler on the left
+		ctxtop.fillRect( 0,y,xunit-paddingpx,linethickness );
 		
 		//ctxtop.fillRect( x,y-10,linethickness,20 );
 		
@@ -463,9 +481,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	function draw() {
 		
 		let now = new Date();
-		let clocks = clockstring(now.getHours(),now.getMinutes());
+		let clocks = "[" + clockstring(now.getHours(),now.getMinutes()) + "] ";
 		
-		textdisplay(clocks + " " + "0/2 Refreshing... ");
+		textdisplay(clocks + "0/2 Refreshing... ");
 		
 		//two seperate requests: /current, which shows all unclosed battles and future battles
 		//and a second one which grabs the battles that already happened today. this second one
@@ -479,9 +497,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 		let req = new XMLHttpRequest();
 		req.addEventListener('load', (event) => {
-			textdisplay(clocks + " " + "2/2 Loaded!");
+			textdisplay(clocks + "2/2 Loaded!");
 			if (first_response) {
-				textdisplay(clocks + " " + "1/2 Loaded future battles...");
+				textdisplay(clocks + "1/2 Loaded future battles...");
 				clear();
 				first_response = false;
 			}
@@ -494,9 +512,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 		reqold = new XMLHttpRequest();
 		reqold.addEventListener('load', (event) => {
-			textdisplay(clocks + " " + "2/2  Loaded!");
+			textdisplay(clocks + "2/2  Loaded!");
 			if (first_response) {
-				textdisplay(clocks + " " + "1/2 Loaded past battles...");
+				textdisplay(clocks + "1/2 Loaded past battles...");
 				clear();
 				first_response = false;
 			}
