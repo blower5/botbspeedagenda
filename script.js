@@ -778,39 +778,43 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		draw_mouse_crosshairs(mx,my);
 	});
 		
-	//handle shift key
-	addEventListener("keydown", (event) => { 
-		SHIFT = event.shiftKey;
 		
-		ctxtop.clearRect(0, 0, width, height);
-		draw_current_time_marker();
-		draw_mouse_crosshairs();
-	});
-	
 	addEventListener("keyup", (event) => { 
-		SHIFT = event.shiftKey;
-		
-		ctxtop.clearRect(0, 0, width, height);
-		draw_current_time_marker();
-		draw_mouse_crosshairs();
-	});
-	
-	//handle xhb size previewing
-	addEventListener('keydown', (event) => {
-		if (event.key == " ") {
-			XHB_PREVIEW_MODE++;
-			XHB_PREVIEW_MODE%=4;
+		if (event.key == "Shift") {
+			SHIFT = event.shiftKey;
 			
 			ctxtop.clearRect(0, 0, width, height);
 			draw_current_time_marker();
 			draw_mouse_crosshairs();
+		}
+	});
+	
+	//handle xhb size previewing
+	addEventListener('keydown', (event) => {
+		switch (event.key) {
+			case "Shift":
+				SHIFT = event.shiftKey;
 			
-			//drawing the crosshairs calls textdisplay() so call it after here to overwrite
-			XHB_PREVIEW_MODE ?
-				textdisplay( "Previewing a " + [,"OHB.","2HB.","4HB."][XHB_PREVIEW_MODE])
-				:
-				textdisplay( "Preview disabled." );
-			
+				ctxtop.clearRect(0, 0, width, height);
+				draw_current_time_marker();
+				draw_mouse_crosshairs();
+				break;
+				
+			case " ":
+				XHB_PREVIEW_MODE++;
+				XHB_PREVIEW_MODE%=4;
+				
+				ctxtop.clearRect(0, 0, width, height);
+				draw_current_time_marker();
+				draw_mouse_crosshairs();
+				
+				//drawing the crosshairs calls textdisplay() so call it after here to overwrite
+				XHB_PREVIEW_MODE ?
+					textdisplay( "Previewing a " + [,"OHB.","2HB.","4HB."][XHB_PREVIEW_MODE])
+					:
+					textdisplay( "Preview disabled." );
+				
+				break;
 		}
 	});
 
