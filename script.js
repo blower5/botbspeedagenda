@@ -397,7 +397,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
 
-				if (start_days_remaining => 0) {
+				if (start_days_remaining >= 0) {
 					drawdivlink(
 						xunit*6*start_days_remaining+xunit,
 						yunit+yunit/2*start_decimal_hours_absolute,
