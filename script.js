@@ -358,7 +358,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	}
 
 	//draws boxes for every battle in a list. old switches the color palette.
-	function draw_battle_list(battles_list, old=false) {
+	function draw_battle_list(battles_list) {
 		
 		//the list needs to be sorted by start time so the inbetween-free-time calculation (at the end)
 		//works properly. also means function mutates battles_list.
@@ -368,9 +368,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		
 		for (let i in battles_list) {
 	
-			//filter non-xhb out
+			//filter non-xhb out (not strictly necessary because it already happens in the GET request....)
 			if (battles_list[i].type != 3) continue;
 
+			let old = false;
+			if (battles_list[i]["period"] == "end") old = true;
+			
 			//assign class names (different colors)
 			let cl = i%2?"battle newbattle1":"battle newbattle2";
 			if (old) cl = i%2?"battle oldbattle1":"battle oldbattle2";
@@ -385,42 +388,42 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let start_decimal_hours_absolute = st.getHours() + st.getMinutes()/60;
 			let end_decimal_hours_absolute = et.getHours() + et.getMinutes()/60;
 			
-			//filter out battles more than a week away
+			//filter out battles more than a week away / yesterday or further
 			if (start_days_remaining > 6) continue;
+			if (end_days_remaining   < 0) continue;
 			
 			let timestring = clockstring(st.getHours(),st.getMinutes());
 			
 			if (start_days_remaining != end_days_remaining) {
 				//this xhb crosses the day boundry, must be drawn in two parts
 
-				drawdivlink(
-					xunit*6*start_days_remaining+xunit,
-					yunit+yunit/2*start_decimal_hours_absolute,
-					xunit*6-paddingpx, 
-					yunit/2*(24 - start_decimal_hours_absolute),
-					battles_list[i].title,
-					timestring,
-					battles_list[i],
-					cl);
-				
-				//this breaks out of the for loop! this battle will not trigger
-				//the free time calculation at the bottom, although if it's a
-				//week away at 12am, maybe it doesn't matter?
-				if (end_days_remaining > 6) continue;
+				if (start_days_remaining => 0) {
+					drawdivlink(
+						xunit*6*start_days_remaining+xunit,
+						yunit+yunit/2*start_decimal_hours_absolute,
+						xunit*6-paddingpx, 
+						yunit/2*(24 - start_decimal_hours_absolute),
+						battles_list[i].title,
+						timestring,
+						battles_list[i],
+						cl);
+				}
 				
 				//this is the residual part of the xhb the next day after 12am.
 				//it has no name or timestamp so it is visually different from
 				//an xhb that starts at 12am. drawdivlink() still draws its
 				//format icon.
-				drawdivlink(
-					xunit*6*end_days_remaining+xunit,
-					yunit,
-					xunit*6-paddingpx,
-					yunit/2*end_decimal_hours_absolute,
-					"...",
-					"",
-					battles_list[i],
-					cl);
+				if (end_days_remaining <= 6) {
+					drawdivlink(
+						xunit*6*end_days_remaining+xunit,
+						yunit,
+						xunit*6-paddingpx,
+						yunit/2*end_decimal_hours_absolute,
+						"...",
+						"",
+						battles_list[i],
+						cl);
+				}
 				
 			} else {
 				//the standard xhb draw call.
@@ -669,7 +672,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			
 			
 			//now, draw a filled rectangle marking the xhb. this needs to be split in two if it crosses the day boundary.
-			//luckily we don't care if the first part goes past 24h because you can't see it.
 			ctxtop.fillStyle = palettecolor14+"44";
 			
 			let clamped_hours = Math.min( xhbhours+(mtime%24), 24 ) - (mtime%24);
@@ -680,7 +682,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			ctxtop.fillRect( 0,snappedy,xunit-paddingpx, clamped_hours*yunit/2 ); 
 			
 			if (snappedx != mxhb_endtime_x) {
-				//second part on the day
+				//second part on the next day (at mxhb_endtime_x)
 				ctxtop.fillRect( mxhb_endtime_x,yunit,xunit*6-paddingpx, mxhb_endtime_hours*yunit/2 ); 
 				//second part on the ruler
 				ctxtop.fillRect( 0,yunit,xunit-paddingpx,  mxhb_endtime_hours*yunit/2 ); 
@@ -725,48 +727,21 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let now = new Date();
 		let clocks = "[" + clockstring(now.getHours(),now.getMinutes()) + "] ";
 		
-		textdisplay(clocks + "0/2 Refreshing... ");
+		textdisplay(clocks + "Refreshing... ");
 		
-		//two seperate requests: /current, which shows all unclosed battles and future battles
-		//and a second one which grabs the battles that already happened today. this second one
-		//uses a post request to filter for battles that happened today, and then filters out
-		//battles that haven't reached the "end" period by passing the result to a function.
-		//Additionally, they need to account for a race condition so clear() only gets called
-		//once. Although the time marker needs to be drawn on top, it will only ever need to be
-		//above an active battle, so this is handled in the /current request's callback.
-
-		let first_response = true;
+		
 
 		let req = new XMLHttpRequest();
 		req.addEventListener('load', (event) => {
-			textdisplay(clocks + "2/2 Loaded!");
-			if (first_response) {
-				textdisplay(clocks + "1/2 Loaded future battles...");
-				clear();
-				first_response = false;
-			}
+			textdisplay(clocks + "Loaded!");
+			clear();
+
 			draw_battle_list(req.response);
 			draw_current_time_marker();
 		});
-		req.open("GET", "https://battleofthebits.com/api/v1/battle/current");
+		req.open("GET", "https://battleofthebits.com/api/v1/battle/list/0/20?sort=start&desc=true&filters=type~3");
 		req.responseType = 'json';
 		req.send();
-
-		reqold = new XMLHttpRequest();
-		reqold.addEventListener('load', (event) => {
-			textdisplay(clocks + "2/2  Loaded!");
-			if (first_response) {
-				textdisplay(clocks + "1/2 Loaded past battles...");
-				clear();
-				first_response = false;
-			}
-			let arr = only_ended_battles(reqold.response);
-			draw_battle_list(arr,true);
-		});
-		reqold.open("POST", "https://battleofthebits.com/api/v1/battle/list");
-		reqold.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-		reqold.responseType = 'json';
-		reqold.send(  encodeURI('sort=start&desc=true&conditions[0][property]=end&conditions[0][operator]=LIKE&conditions[0][operand]='+assemble_datestring()+'%')  );
 	}
 	
 	//if we get the graphix up as soon as possible it looks better, so extra half-draw call 
