@@ -801,14 +801,16 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			XHB_PREVIEW_MODE++;
 			XHB_PREVIEW_MODE%=4;
 			
+			ctxtop.clearRect(0, 0, width, height);
+			draw_current_time_marker();
+			draw_mouse_crosshairs();
+			
+			//drawing the crosshairs calls textdisplay() so call it after here to overwrite
 			XHB_PREVIEW_MODE ?
 				textdisplay( "Previewing a " + [,"OHB.","2HB.","4HB."][XHB_PREVIEW_MODE])
 				:
 				textdisplay( "Preview disabled." );
 			
-			ctxtop.clearRect(0, 0, width, height);
-			draw_current_time_marker();
-			draw_mouse_crosshairs();
 		}
 	});
 
