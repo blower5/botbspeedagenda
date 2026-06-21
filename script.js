@@ -313,10 +313,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let maindiv = document.getElementById("maindiv");
 		let a = document.createElement("a");
 		let div = document.createElement("div");
+		
 		let divicon = document.createElement("div");
 		let smalltime = document.createElement("small");
 		let span = document.createElement("span");
-		
 		let divformat = document.createElement("div");
 		let divhost = document.createElement("div");
 		
@@ -333,7 +333,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		smalltime.textContent = txt2.toString();
 		
 		divformat.className = "smalldiv smalldivspacer";
-		divformat.textContent = battle.format_tokens[0];
+		
+		//now this might be a bad hack, but -- even though the length of the xhb (1, 2, 4) isn't returned
+		//by the api (only its start and end timestamps) we can grab it's length in string form (ohb, 2hb,
+		//4hb) from it's cover art link, where it always appears in the same spot. this also saves a step
+		//converting from duration to string.
+		let xhbsizestring = battle.cover_art_url.slice(40,43).toUpperCase();
+		
+		divformat.textContent = battle.format_tokens[0] + " " + xhbsizestring;
 		divhost.className = "smalldiv";
 		divhost.textContent = battle.hosts_names;
 	
