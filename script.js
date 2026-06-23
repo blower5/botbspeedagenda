@@ -1,6 +1,15 @@
 let SHIFT = 0;
 let XHB_PREVIEW_MODE = 0;
+let TEXT_DISPLAY_PERSISTENT = "";
+let MARK_EXISTS = false;
+let MARK_X = 0;
+let MARK_Y = 0;
+let MARK_TIME = 0;
 
+let CROSSHAIRFRAME = 0;
+let MOUSE_LASTX = 0;
+let MOUSE_LASTY = 0;
+	
 function parse_day(d) {
 	return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
 }
@@ -35,8 +44,40 @@ function clockstring(h,m) {
 	return h2 + ":" + m2;
 }
 
-function textdisplay(t) {
-	document.getElementById("textdisplaywrite").textContent = t;
+function decimal_hours_to_datetimestrings(inhours) {
+	let now = new Date();
+	
+	//use a Date() to convert timestamp to day name in user timezone
+	let mtimedaytextd = new Date(now.getTime() + Math.floor(inhours/24)*24*3600000);
+	let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
+	
+	let minutes = Math.floor( (inhours%1)*60 );
+	let clocks = clockstring( Math.floor(inhours%24), minutes.toString() );
+	let mtimetext = mtimedaytext + ", " + clocks;
+	
+	
+	let nowdecimalhours = now.getHours() + now.getMinutes()/60;
+	let mtimerelative = inhours - nowdecimalhours;
+	
+	//negative numbers need to be ceilinged or else -1 seconds gets floored to -1 days, -1 hours, -1 minutes.
+	let rminutes = Math.floor((mtimerelative%1)*60);
+	let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
+	let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
+	let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";
+	
+	return [mtimetext,mtimerelativetext];
+}
+
+
+function textdisplay(t="") {
+	let sep = "";
+	if (TEXT_DISPLAY_PERSISTENT!="" & t!="") sep = " // ";
+	document.getElementById("textdisplaywrite").textContent = TEXT_DISPLAY_PERSISTENT + sep + t;
+}
+
+//this is used for the mark feature
+function set_textdisplay_persistent(t) {
+	TEXT_DISPLAY_PERSISTENT = t;
 }
 
 //The text shadow color is the average of all 5 palette colors. Really!
@@ -139,12 +180,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//if we wanted to define all the drawing functions outside
 	//the event listener and not use globals we would have to
 	//pass ctx into the functions every time which is annoying.
-	let canvas = document.getElementById('main');
-	let canvastop = document.getElementById('top');
-	let width = canvas.clientWidth;   //probably 960px
-	let height = canvas.clientHeight; //probably 800px
-	let ctx = canvas.getContext('2d');
-	let ctxtop = canvastop.getContext('2d');
+	const canvas = document.getElementById('main');
+	const canvastop = document.getElementById('top');
+	const width = canvas.clientWidth;   //probably 960px
+	const height = canvas.clientHeight; //probably 800px
+	const ctx = canvas.getContext('2d');
+	const ctxtop = canvastop.getContext('2d');
 
 
 
@@ -245,31 +286,36 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	//  ...
 	//-----
 
-	let xunit = width / 43;
-	let yunit = (height-20)/ 13; //padding introduced because its cutting the bottom off???
+	const xunit = width / 43;
+	const yunit = (height-20)/ 13; //padding introduced because its cutting the bottom off???
 
-	let paddingpx = 4;
-	let linethickness = 1;
+	const paddingpx = 4;
+	const linethickness = 1;
 
-	let dayfontpx = 17;
-	let dayfontcolor = palettecolor1;
+	const dayfontpx = 17;
+	const dayfontcolor = palettecolor1;
 	
-	let fontpx = 11;
-	let fontcolor = palettecolor1;
+	const fontpx = 11;
+	const fontcolor = palettecolor1;
 	
-	let fontoutlinecolor = palettecolorshadow + "66";
+	const fontoutlinecolor = palettecolorshadow + "66";
 
-	let bgAMcolor = 		palettecolor4;
-	let bgPMcolor = 		palettecolor4;
-	let bggridcolor =		palettecolor1+"66";
+	const bgAMcolor = 		palettecolor4;
+	const bgPMcolor = 		palettecolor4;
+	const bggridcolor =		palettecolor1+"66";
 
-	let borderradius = 4;
+	const borderradius = 4;
 	
 	//recreation of botb's "topnoisegradient" texture so the canvas stuff matches the divs.
-	let topshadegradient = ctx.createLinearGradient(0,0,0,35);
+	const topshadegradient = ctx.createLinearGradient(0,0,0,35);
 	topshadegradient.addColorStop(0, "#8A8A8A2B");
 	topshadegradient.addColorStop(1, "#8A8A8A00");
 	
+	
+	function coords_to_decimal_hours(x,y) {
+		let hours = Math.max(y - yunit,0)/(yunit/2);
+		return hours + 24 * Math.floor( Math.max(x-xunit,0)/(xunit*6));
+	}
 	
 	function dashed_horizontal_line(x, y, w, thickness, dashes, dashratio, cx=ctx) {
 		let onedash = w/dashes;
@@ -308,8 +354,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		maindiv.appendChild(div);
 	}
 	
-	//actually a speciallized battle div drawer. txt is title, txt2 is timestamp.
-	function drawdivlink(x,y,w,h,txt,txt2,battle,extraclass=""){
+	//actually a specialized battle div drawer.
+	function drawdivlink(x,y,w,h,title,timestamp,battle,extraclass=""){
 		let maindiv = document.getElementById("maindiv");
 		let a = document.createElement("a");
 		let div = document.createElement("div");
@@ -328,15 +374,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		divicon.className = "battleicon botb-icon icons-formats-"+battle.format_tokens[0];
 		
 		//battle title
-		span.textContent = txt.toString();
+		span.textContent = title.toString();
 		//timestamp
-		smalltime.textContent = txt2.toString();
+		smalltime.textContent = timestamp.toString();
 		
 		divformat.className = "smalldiv smalldivspacer";
 		
 		//now this might be a bad hack, but -- even though the length of the xhb (1, 2, 4) isn't returned
 		//by the api (only its start and end timestamps) we can grab it's length in string form (ohb, 2hb,
-		//4hb) from it's cover art link, where it always appears in the same spot. this also saves a step
+		//4hb) from its cover art link, where it always appears in the same spot. this also saves a step
 		//converting from duration to string.
 		let xhbsizestring = battle.cover_art_url.slice(40,43).toUpperCase();
 		
@@ -598,72 +644,112 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		ctxtop.fill();
 	}
 	
-	let CROSSHAIRFRAME = 0;
-	let MOUSE_LASTX = 0;
-	let MOUSE_LASTY = 0;
-	function draw_mouse_crosshairs(x=MOUSE_LASTX,y=MOUSE_LASTY) {
-		
-		let now = new Date();
+	
+	function draw_mouse_crosshairs(x=MOUSE_LASTX,y=MOUSE_LASTY,clicking=false) {
 		
 		//snap y to 15 minutes
 		//one hour is yunit/2 so 15 minutes is yunit/8
 		let snappedy = y;
 		if (SHIFT) snappedy = Math.round((y-yunit)/(yunit/8))*(yunit/8)+yunit;
 		
+		
 		// --- MOUSE TIME / TEXTDISPLAY HANDLING ------------------------------------------------------------------
 		
-		let hoursroundifshift = Math.max(snappedy - yunit,0)/(yunit/2);
-		
 		//mtime is decimal hours since the top left (12am at whatever day that is)
-		let mtime = hoursroundifshift + 24 * Math.floor( Math.max(x-xunit,0)/(xunit*6));
-		//use a Date() to convert timestamp to day name in user timezone
-		let mtimedaytextd = new Date(now.getTime() + Math.floor(mtime/24)*24*3600000);
-		let mtimedaytext = parse_day(mtimedaytextd.getDay()) + " " + mtimedaytextd.getDate();
+		let mtime = coords_to_decimal_hours(x,snappedy);
 		
-		let minutes = Math.floor( (mtime%1)*60 );
-		let clocks = clockstring( Math.floor(mtime%24), minutes.toString() );
-		let mtimetext = mtimedaytext + ", " + clocks;
-		
-		let nowdecimalhours = now.getHours() + now.getMinutes()/60;
-		let mtimerelative = mtime - nowdecimalhours;
-		
-		//negative numbers need to be ceilinged or else -1 seconds gets floored to -1 days, -1 hours, -1 minutes.
-		let rminutes = Math.floor((mtimerelative%1)*60);
-		let days =        (mtimerelative<0) ? Math.ceil(mtimerelative/24)     : Math.floor(mtimerelative/24);
-		let hours =    (mtimerelative%24<0) ? Math.ceil(mtimerelative%24)     : Math.floor(mtimerelative%24);
-		let mtimerelativetext = days + "d " + hours + "h " + rminutes + "m";
+		let [mtimetext,mtimerelativetext] = decimal_hours_to_datetimestrings(mtime);
 		
 		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
 		
 		
-		
-		// ---- MOUSE GRAPHICS HANDLING ---------------------------------------------------------------------------
-		
-		
-		if (x<xunit) return;
-		if (y<yunit) return;
-		
+		// --- MOUSE GRAPHICS HANDLING ----------------------------------------------------------------------------
+			
 		//snap x left to day boundary
 		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
+			
+		//only draw the line if mouse is on the grid
+		if (x>=xunit & y>=yunit) {
+			ctxtop.fillStyle = palettecolor2;
+			ctxtop.strokeStyle = palettecolor2;
+			
+			//line across the day the mouse is over
+			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,linethickness );
+			//line that marks the ruler on the left
+			ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
+		}
 		
-		ctxtop.fillStyle = palettecolor2;
-		ctxtop.strokeStyle = palettecolor2;
+		//draw the little round widget thing that animates
+		ctxtop.beginPath();
+		ctxtop.arc(x,y, 6, CROSSHAIRFRAME*.03, CROSSHAIRFRAME*.03+5);
 		
-		//line across the day the mouse is over
-		ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,linethickness );
-		//line that marks the ruler on the left
-		ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
+		let xsize = 8;
+		let s = Math.sin(CROSSHAIRFRAME*.03)*xsize;
+		let c = Math.cos(CROSSHAIRFRAME*.03)*xsize;
+		ctxtop.moveTo(x+s,y+c);
+		ctxtop.lineTo(x-s,y-c);
+		ctxtop.moveTo(x-s,y+c);
+		ctxtop.lineTo(x+s,y-c);
+		ctxtop.stroke();
+		
+		CROSSHAIRFRAME++;
+		CROSSHAIRFRAME%=419;
 		
 		
-		//map mode (linear) to xhb size (0h, 1h, 2h, 4h )
-		let xhbhours = Math.floor(2**(XHB_PREVIEW_MODE-1));
+		// ---- PREVIEW AND MARK HANDLING -------------------------------------------------------------------------
+		
+		//set mark if clicking (we do this here because we already have the mouse
+		//coords and did the snapping math thing.)
+		if (clicking) {
+			MARK_EXISTS = true;
+			MARK_X = snappedx;
+			MARK_Y = snappedy;
+			MARK_TIME = coords_to_decimal_hours(MARK_X, MARK_Y);
+			let [marktime,markrelativetime] = decimal_hours_to_datetimestrings(MARK_TIME);
+			TEXT_DISPLAY_PERSISTENT = "Mark: " + marktime + " / in " + markrelativetime;
+			textdisplay();
+		}
+		
+		//draw mark
+		if (MARK_EXISTS) {
+			ctxtop.fillStyle = palettecolor2;
+			dashed_horizontal_line( MARK_X, MARK_Y, xunit*6-paddingpx, linethickness, 20, 0.7, ctxtop );
+			
+			ctxtop.strokeStyle = palettecolor2;
+			//big 5px circle
+			ctxtop.beginPath();
+			ctxtop.arc(MARK_X, MARK_Y, 5, 0, 6.28);
+			ctxtop.stroke();		
+			
+			ctxtop.strokeStyle = palettecolor1;
+			//little 3px circle
+			ctxtop.beginPath();
+			ctxtop.arc(MARK_X, MARK_Y, 3, 0, 6.28);
+			ctxtop.stroke();
+		}
 		
 		
 		if (XHB_PREVIEW_MODE != 0) {
+			//set up our reference (top of the shaded region) which will be the mouse cursor
+			//or the mark if it exists.
+			let reference_x, reference_y, reference_time;
+			if (MARK_EXISTS) {
+				reference_x = MARK_X;
+				reference_y = MARK_Y;
+				reference_time = MARK_TIME;
+			} else {
+				reference_x = snappedx;
+				reference_y = snappedy;
+				reference_time = mtime;
+			}
+			
+			//map mode (linear) to xhb size (0h, 1h, 2h, 4h )
+			let xhbhours = Math.floor(2**(XHB_PREVIEW_MODE-1));
+			
 			//to correctly draw a line in x hours from now, we need to do it as a time operation and then
 			//convert back to coordinates.
 			
-			let mxhb_endtime = mtime + xhbhours;
+			let mxhb_endtime = reference_time + xhbhours;
 			
 			let mxhb_endtime_days = Math.floor(mxhb_endtime/24);
 			let mxhb_endtime_hours = mxhb_endtime%24;
@@ -681,14 +767,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			//now, draw a filled rectangle marking the xhb. this needs to be split in two if it crosses the day boundary.
 			ctxtop.fillStyle = palettecolor14+"44";
 			
-			let clamped_hours = Math.min( xhbhours+(mtime%24), 24 ) - (mtime%24);
+			let clamped_hours = Math.min( xhbhours+(reference_time%24), 24 ) - (reference_time%24);
 			
 			//first part on the day
-			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx, clamped_hours*yunit/2 ); 
+			ctxtop.fillRect( reference_x,reference_y,xunit*6-paddingpx, clamped_hours*yunit/2 ); 
 			//first part on the ruler
-			ctxtop.fillRect( 0,snappedy,xunit-paddingpx, clamped_hours*yunit/2 ); 
+			ctxtop.fillRect( 0,reference_y,xunit-paddingpx, clamped_hours*yunit/2 ); 
 			
-			if (snappedx != mxhb_endtime_x) {
+			if (reference_x != mxhb_endtime_x) {
 				//second part on the next day (at mxhb_endtime_x)
 				ctxtop.fillRect( mxhb_endtime_x,yunit,xunit*6-paddingpx, mxhb_endtime_hours*yunit/2 ); 
 				//second part on the ruler
@@ -696,22 +782,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			}
 		}
 		
-		//endless fun was had
-		
-		ctxtop.beginPath();
-		ctxtop.arc(x,y, 6, CROSSHAIRFRAME*.03, CROSSHAIRFRAME*.03+5);
-		
-		let xsize = 8;
-		let s = Math.sin(CROSSHAIRFRAME*.03)*xsize;
-		let c = Math.cos(CROSSHAIRFRAME*.03)*xsize;
-		ctxtop.moveTo(x+s,y+c);
-		ctxtop.lineTo(x-s,y-c);
-		ctxtop.moveTo(x-s,y+c);
-		ctxtop.lineTo(x+s,y-c);
-		ctxtop.stroke();
-		
-		CROSSHAIRFRAME++;
-		CROSSHAIRFRAME%=419;
 		
 		//sometimes this function gets called to update the mouse crosshairs, but whatever is calling it
 		//doesn't know where the mouse is, only that it needs to be updated. storing the last position in
@@ -732,15 +802,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	function draw() {
 		
 		let now = new Date();
-		let clocks = "[" + clockstring(now.getHours(),now.getMinutes()) + "] ";
+		let clocks = " (" + clockstring(now.getHours(),now.getMinutes()) + ")";
 		
-		textdisplay(clocks + "Refreshing... ");
+		textdisplay("Refreshing... " + clocks);
 		
 		
 
 		let req = new XMLHttpRequest();
 		req.addEventListener('load', (event) => {
-			textdisplay(clocks + "Loaded!");
+			textdisplay("Loaded!" + clocks);
 			clear();
 
 			draw_battle_list(req.response);
@@ -768,6 +838,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	setInterval(draw,120000);
 	
 	//now set up input handling functions.
+	//many things need to trigger the mouse function.
 	document.getElementById("maindiv").addEventListener('mousemove', (event) => {
 		let m = document.getElementById("maindiv").getBoundingClientRect();
 		let mx = event.x - m.x;
@@ -777,8 +848,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		draw_current_time_marker();
 		draw_mouse_crosshairs(mx,my);
 	});
+	
+	document.getElementById("maindiv").addEventListener('mousedown', (event) => {
+		let m = document.getElementById("maindiv").getBoundingClientRect();
+		let mx = event.x - m.x;
+		let my = event.y - m.y;
 		
-		
+		ctxtop.clearRect(0, 0, width, height);
+		draw_current_time_marker();
+		draw_mouse_crosshairs(mx,my,true);
+	});
+	
 	addEventListener("keyup", (event) => { 
 		if (event.key == "Shift") {
 			SHIFT = event.shiftKey;
@@ -789,7 +869,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		}
 	});
 	
-	//handle xhb size previewing
 	addEventListener('keydown', (event) => {
 		switch (event.key) {
 			case "Shift":
