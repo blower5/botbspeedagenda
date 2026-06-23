@@ -652,6 +652,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		let snappedy = y;
 		if (SHIFT) snappedy = Math.round((y-yunit)/(yunit/8))*(yunit/8)+yunit;
 		
+		//snap x left to day boundary
+		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
+		
 		
 		// --- MOUSE TIME / TEXTDISPLAY HANDLING ------------------------------------------------------------------
 		
@@ -663,57 +666,38 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		textdisplay("Mouse position: " + mtimetext + " / in " + mtimerelativetext);
 		
 		
-		// --- MOUSE GRAPHICS HANDLING ----------------------------------------------------------------------------
-			
-		//snap x left to day boundary
-		let snappedx = Math.floor((x-xunit)/(xunit*6))*xunit*6+xunit;
-			
-		//only draw the line if mouse is on the grid
-		if (x>=xunit & y>=yunit) {
-			ctxtop.fillStyle = palettecolor2;
-			ctxtop.strokeStyle = palettecolor2;
-			
-			//line across the day the mouse is over
-			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,linethickness );
-			//line that marks the ruler on the left
-			ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
-		}
-		
-		//draw the little round widget thing that animates
-		ctxtop.beginPath();
-		ctxtop.arc(x,y, 6, CROSSHAIRFRAME*.03, CROSSHAIRFRAME*.03+5);
-		
-		let xsize = 8;
-		let s = Math.sin(CROSSHAIRFRAME*.03)*xsize;
-		let c = Math.cos(CROSSHAIRFRAME*.03)*xsize;
-		ctxtop.moveTo(x+s,y+c);
-		ctxtop.lineTo(x-s,y-c);
-		ctxtop.moveTo(x-s,y+c);
-		ctxtop.lineTo(x+s,y-c);
-		ctxtop.stroke();
-		
-		CROSSHAIRFRAME++;
-		CROSSHAIRFRAME%=419;
-		
-		
 		// ---- PREVIEW AND MARK HANDLING -------------------------------------------------------------------------
 		
 		//set mark if clicking (we do this here because we already have the mouse
-		//coords and did the snapping math thing.)
+		//coords and did the snapping math already.)
+		//however if the mark already exists, and the user is clicking on the mark's
+		//position, clear the mark.
 		if (clicking) {
-			MARK_EXISTS = true;
-			MARK_X = snappedx;
-			MARK_Y = snappedy;
-			MARK_TIME = coords_to_decimal_hours(MARK_X, MARK_Y);
-			let [marktime,markrelativetime] = decimal_hours_to_datetimestrings(MARK_TIME);
-			TEXT_DISPLAY_PERSISTENT = "Mark: " + marktime + " / in " + markrelativetime;
-			textdisplay();
+			if (MARK_EXISTS & (MARK_Y == snappedy)) {
+				MARK_EXISTS = false;
+				TEXT_DISPLAY_PERSISTENT = "";
+				textdisplay("Cleared mark.");
+			} else {
+				MARK_EXISTS = true;
+				MARK_X = snappedx;
+				MARK_Y = snappedy;
+				MARK_TIME = coords_to_decimal_hours(MARK_X, MARK_Y);
+				let [marktimestr,markrelativetimestr] = decimal_hours_to_datetimestrings(MARK_TIME);
+				TEXT_DISPLAY_PERSISTENT = "Mark: " + marktimestr + " / in " + markrelativetimestr;
+				textdisplay();
+			}
 		}
 		
 		//draw mark
 		if (MARK_EXISTS) {
+			//draw line across the day
 			ctxtop.fillStyle = palettecolor2;
 			dashed_horizontal_line( MARK_X, MARK_Y, xunit*6-paddingpx, linethickness, 20, 0.7, ctxtop );
+			
+			//draw bicolored line across the ruler
+			ctxtop.fillRect( 0, MARK_Y, xunit-paddingpx, linethickness );
+			ctxtop.fillStyle = palettecolor1;
+			dashed_horizontal_line( 0, MARK_Y, xunit-paddingpx, linethickness, 4, 0.5, ctxtop );
 			
 			ctxtop.strokeStyle = palettecolor2;
 			//big 5px circle
@@ -729,20 +713,24 @@ window.addEventListener('DOMContentLoaded', (event) => {
 		}
 		
 		
-		if (XHB_PREVIEW_MODE != 0) {
-			//set up our reference (top of the shaded region) which will be the mouse cursor
-			//or the mark if it exists.
-			let reference_x, reference_y, reference_time;
-			if (MARK_EXISTS) {
-				reference_x = MARK_X;
-				reference_y = MARK_Y;
-				reference_time = MARK_TIME;
-			} else {
-				reference_x = snappedx;
-				reference_y = snappedy;
-				reference_time = mtime;
-			}
+		//draw preview shaded box:
+		//set up our reference (top of the shaded region) which will be the mouse cursor
+		//or the mark if it exists. if it's on the mouse, don't draw it when the mouse
+		//is out of bounds
+		let draw_preview = true;
+		let reference_x, reference_y, reference_time;
+		if (MARK_EXISTS) {
+			reference_x = MARK_X;
+			reference_y = MARK_Y;
+			reference_time = MARK_TIME;
+		} else {
+			reference_x = snappedx;
+			reference_y = snappedy;
+			reference_time = mtime;
+			if (x<xunit | y<yunit) draw_preview = false;
+		}
 			
+		if ( (draw_preview) & (XHB_PREVIEW_MODE != 0) ) {
 			//map mode (linear) to xhb size (0h, 1h, 2h, 4h )
 			let xhbhours = Math.floor(2**(XHB_PREVIEW_MODE-1));
 			
@@ -770,9 +758,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let clamped_hours = Math.min( xhbhours+(reference_time%24), 24 ) - (reference_time%24);
 			
 			//first part on the day
-			ctxtop.fillRect( reference_x,reference_y,xunit*6-paddingpx, clamped_hours*yunit/2 ); 
+			ctxtop.fillRect( reference_x,reference_y +1, xunit*6-paddingpx, clamped_hours*yunit/2 -1 ); 
 			//first part on the ruler
-			ctxtop.fillRect( 0,reference_y,xunit-paddingpx, clamped_hours*yunit/2 ); 
+			ctxtop.fillRect( 0,reference_y +1 ,xunit-paddingpx, clamped_hours*yunit/2 -1 ); 
 			
 			if (reference_x != mxhb_endtime_x) {
 				//second part on the next day (at mxhb_endtime_x)
@@ -781,6 +769,40 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				ctxtop.fillRect( 0,yunit,xunit-paddingpx,  mxhb_endtime_hours*yunit/2 ); 
 			}
 		}
+		
+		
+		// --- MOUSE GRAPHICS HANDLING ----------------------------------------------------------------------------
+		
+		//the mouse related cursor and line need to be drawn on top, so they happen last.
+		//this assignment only makes it through to the widget if the mouse is off the grid
+		ctxtop.strokeStyle = palettecolor1;
+		
+		//only draw the line if mouse is on the grid
+		if (x>=xunit & y>=yunit) {
+			ctxtop.fillStyle = palettecolor2;
+			ctxtop.strokeStyle = palettecolor2;
+			
+			//line across the day the mouse is over
+			ctxtop.fillRect( snappedx,snappedy,xunit*6-paddingpx,linethickness );
+			//line that marks the ruler on the left
+			ctxtop.fillRect( 0,snappedy,xunit-paddingpx,linethickness );
+		}
+		
+		//draw the little round widget thing that animates
+		ctxtop.beginPath();
+		ctxtop.arc(x,y, 6, CROSSHAIRFRAME*.03, CROSSHAIRFRAME*.03+5);
+		
+		let xsize = 8;
+		let s = Math.sin(CROSSHAIRFRAME*.03)*xsize;
+		let c = Math.cos(CROSSHAIRFRAME*.03)*xsize;
+		ctxtop.moveTo(x+s,y+c);
+		ctxtop.lineTo(x-s,y-c);
+		ctxtop.moveTo(x-s,y+c);
+		ctxtop.lineTo(x+s,y-c);
+		ctxtop.stroke();
+		
+		CROSSHAIRFRAME++;
+		CROSSHAIRFRAME%=419;
 		
 		
 		//sometimes this function gets called to update the mouse crosshairs, but whatever is calling it
@@ -894,6 +916,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					textdisplay( "Preview disabled." );
 				
 				break;
+				
+			case "Escape":
+				//escape erases the mark
+				MARK_EXISTS = false;
+				TEXT_DISPLAY_PERSISTENT = "";
+				
+				ctxtop.clearRect(0, 0, width, height);
+				draw_current_time_marker();
+				draw_mouse_crosshairs();
+				
+				textdisplay("Cleared mark.");
 		}
 	});
 
